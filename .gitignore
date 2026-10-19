@@ -1,0 +1,13 @@
+.theos/
+obj/
+packages/
+vendor/mbedtls/
+Resources/Icon*.png
+Resources/Default*.png
+Resources/LaunchLogo*.png
+*.ipa
+*.deb
+.DS_Store
+local.json
+tools/local.json
+build.log

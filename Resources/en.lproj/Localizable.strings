@@ -1,0 +1,60 @@
+/* Shazamer English Localization */
+
+"APP_NAME" = "Shazamer";
+"TOUCH_TO_SHAZAM" = "Touch to Shazam";
+"LISTENING" = "Listening...";
+"TAGGING" = "Tagging...";
+"NO_MATCH" = "No match found. Tap to try again.";
+"MIC_PERMISSION_DENIED" = "Microphone access is disabled. Please allow it in Settings > Privacy > Microphone.";
+"OFFLINE_SAVED" = "No internet. Tag saved to history to identify later.";
+"ERROR_NETWORK" = "Network error. Could not connect to Shazam servers.";
+"MY_TAGS" = "My Tags";
+"SETTINGS" = "Settings";
+
+/* Track Actions */
+"PLAY_IN_MUZIKA" = "Play in Muzika";
+"PLAY_IN_SPOT6" = "Play in Spot6";
+"SEARCH_IN_TUBIE" = "Search in Tubie";
+"OPEN_IN_YOUTUBE" = "Open on YouTube";
+"OPEN_IN_APPLE_MUSIC" = "Open in Apple Music";
+"OPEN_IN_SPOTIFY" = "Open in Spotify";
+
+/* Track View */
+"LYRICS" = "Lyrics";
+"NO_LYRICS" = "No lyrics available for this song.";
+"DETAILS" = "Song Info";
+"ALBUM" = "Album";
+"RELEASE_DATE" = "Release Date";
+"GENRE" = "Genre";
+"LABEL" = "Record Label";
+"SHARE_TEXT" = "I used Shazamer on iOS 6 to discover \"%@\" by %@!";
+
+/* History */
+"HISTORY_EMPTY" = "No tagged songs yet.\nTap the radar to identify music playing around you!";
+"CLEAR_HISTORY" = "Clear History";
+"CLEAR_HISTORY_CONFIRM" = "Are you sure you want to delete all tagged songs?";
+"CLEAR" = "Clear";
+"CANCEL" = "Cancel";
+"DELETE" = "Delete";
+"DONE" = "Done";
+"CLOSE" = "Close";
+"TAG_NOW" = "Tag Now";
+"OFFLINE_PENDING" = "Pending recognition (tap to retry)";
+
+/* Settings */
+"GENERAL" = "General";
+"SETTINGS_AUTO_LISTEN" = "Auto-listen on app start";
+"SETTINGS_VIBRATE" = "Vibrate when song is found";
+"SETTINGS_DURATION" = "Listen Duration";
+"SETTINGS_DURATION_SHORT" = "4 seconds (Fast)";
+"SETTINGS_DURATION_NORMAL" = "6 seconds (Balanced)";
+"SETTINGS_DURATION_LONG" = "9 seconds (Noisy room)";
+"SETTINGS_PREFERRED_PLAYER" = "Preferred Player";
+"PLAYER_MUZIKA" = "Muzika";
+"PLAYER_SPOT6" = "Spot6";
+"PLAYER_TUBIE" = "Tubie";
+"PLAYER_WEB" = "Safari / Web";
+
+"ABOUT" = "About";
+"VERSION" = "Version";
+"CREDITS" = "Developed by samcejko for retro iOS.\nStandalone Mbed TLS stack, direct Shazam API without proxies.";

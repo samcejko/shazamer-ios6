@@ -1,0 +1,60 @@
+/* Shazamer Czech Localization */
+
+"APP_NAME" = "Shazamer";
+"TOUCH_TO_SHAZAM" = "Klepněte pro rozpoznání";
+"LISTENING" = "Poslouchám...";
+"TAGGING" = "Rozpoznávám...";
+"NO_MATCH" = "Skladba nenalezena. Zkuste to znovu.";
+"MIC_PERMISSION_DENIED" = "Přístup k mikrofonu je zakázán. Povolte jej v Nastavení > Soukromí > Mikrofon.";
+"OFFLINE_SAVED" = "Bez internetu. Záznam byl uložen do historie k pozdějšímu vyhledání.";
+"ERROR_NETWORK" = "Chyba sítě. Nelze se spojit se servery Shazamu.";
+"MY_TAGS" = "Moje tagy";
+"SETTINGS" = "Nastavení";
+
+/* Track Actions */
+"PLAY_IN_MUZIKA" = "Přehrát v Muzika";
+"PLAY_IN_SPOT6" = "Přehrát ve Spot6";
+"SEARCH_IN_TUBIE" = "Vyhledat v Tubie";
+"OPEN_IN_YOUTUBE" = "Otevřít na YouTube";
+"OPEN_IN_APPLE_MUSIC" = "Otevřít v Apple Music";
+"OPEN_IN_SPOTIFY" = "Otevřít na Spotify";
+
+/* Track View */
+"LYRICS" = "Text písně";
+"NO_LYRICS" = "Pro tuto skladbu není text k dispozici.";
+"DETAILS" = "Podrobnosti";
+"ALBUM" = "Album";
+"RELEASE_DATE" = "Vydáno";
+"GENRE" = "Žánr";
+"LABEL" = "Vydavatelství";
+"SHARE_TEXT" = "Právě jsem přes Shazamer na iOS 6 našel skladbu \"%@\" od %@!";
+
+/* History */
+"HISTORY_EMPTY" = "Zatím žádné rozpoznané písničky.\nKlepněte na radar a zaposlouchejte se!";
+"CLEAR_HISTORY" = "Smazat historii";
+"CLEAR_HISTORY_CONFIRM" = "Opravdu chcete smazat celou historii rozpoznaných skladeb?";
+"CLEAR" = "Smazat";
+"CANCEL" = "Zrušit";
+"DELETE" = "Smazat";
+"DONE" = "Hotovo";
+"CLOSE" = "Zavřít";
+"TAG_NOW" = "Rozpoznat nyní";
+"OFFLINE_PENDING" = "Čeká na rozpoznání (klepněte pro vyhledání)";
+
+/* Settings */
+"GENERAL" = "Obecné";
+"SETTINGS_AUTO_LISTEN" = "Spustit poslech při startu";
+"SETTINGS_VIBRATE" = "Zavibrovat při nalezení skladby";
+"SETTINGS_DURATION" = "Délka poslechu";
+"SETTINGS_DURATION_SHORT" = "4 sekundy (rychlé)";
+"SETTINGS_DURATION_NORMAL" = "6 sekund (doporučeno)";
+"SETTINGS_DURATION_LONG" = "9 sekund (hlučné prostředí)";
+"SETTINGS_PREFERRED_PLAYER" = "Výchozí přehrávač";
+"PLAYER_MUZIKA" = "Muzika";
+"PLAYER_SPOT6" = "Spot6";
+"PLAYER_TUBIE" = "Tubie";
+"PLAYER_WEB" = "Safari / Web";
+
+"ABOUT" = "O aplikaci";
+"VERSION" = "Verze";
+"CREDITS" = "Vyvinuto samcejkem pro retro iOS.\nPřímé volání Shazam API bez meziserverů díky Mbed TLS.";
