@@ -34,6 +34,7 @@ static NSString * const kSZPreferredPlayerKey = @"SZPreferredPlayer";
         _listenDuration = (dur >= 3.0 && dur <= 12.0) ? dur : 6.0;
 
         _preferredPlayer = (SZPreferredPlayer)[ud integerForKey:kSZPreferredPlayerKey];
+        _verifyTLS = YES;
     }
     return self;
 }

@@ -1,15 +1,14 @@
-﻿#import "SZHTTPRequest.h"
+#import "SZHTTPRequest.h"
 #import "SZTLSSocket.h"
 #import "SZCommon.h"
-#import "PMSettings.h"
-#import "PMUtils.h"
+#import "SZSettings.h"
 
-typedef NS_ENUM(NSInteger, PMChunkState) {
-    PMChunkStateSize = 0,
-    PMChunkStateData,
-    PMChunkStateDataEnd,
-    PMChunkStateTrailer,
-    PMChunkStateDone,
+typedef NS_ENUM(NSInteger, SZChunkState) {
+    SZChunkStateSize = 0,
+    SZChunkStateData,
+    SZChunkStateDataEnd,
+    SZChunkStateTrailer,
+    SZChunkStateDone,
 };
 
 @interface SZHTTPRequest ()
@@ -26,7 +25,7 @@ typedef NS_ENUM(NSInteger, PMChunkState) {
 @property (nonatomic) BOOL chunked;
 @property (nonatomic) long long contentLength;      // -1 unknown
 @property (nonatomic) long long bodyReceived;
-@property (nonatomic) PMChunkState chunkState;
+@property (nonatomic) SZChunkState chunkState;
 @property (nonatomic) long long chunkRemaining;
 @end
 
@@ -49,7 +48,7 @@ typedef NS_ENUM(NSInteger, PMChunkState) {
         _secure = YES;
         _connectTimeout = 15;
         _readTimeout = 120;
-        _verifyTLS = [PMSettings shared].verifyTLS;
+        _verifyTLS = [SZSettings sharedSettings].verifyTLS;
         _contentLength = -1;
         _accumulated = [NSMutableData data];
     }
@@ -143,7 +142,7 @@ typedef NS_ENUM(NSInteger, PMChunkState) {
     for (;;) {
         const uint8_t *bytes = (const uint8_t *)buffer.bytes;
         NSUInteger len = buffer.length;
-        if (self.chunkState == PMChunkStateSize || self.chunkState == PMChunkStateTrailer) {
+        if (self.chunkState == SZChunkStateSize || self.chunkState == SZChunkStateTrailer) {
             NSUInteger lineEnd = NSNotFound;
             for (NSUInteger i = 0; i + 1 < len; i++) {
                 if (bytes[i] == '\r' && bytes[i + 1] == '\n') { lineEnd = i; break; }
@@ -151,8 +150,8 @@ typedef NS_ENUM(NSInteger, PMChunkState) {
             if (lineEnd == NSNotFound) return NO;   // need more data
             NSString *line = [[NSString alloc] initWithBytes:bytes length:lineEnd encoding:NSASCIIStringEncoding] ?: @"";
             [buffer replaceBytesInRange:NSMakeRange(0, lineEnd + 2) withBytes:NULL length:0];
-            if (self.chunkState == PMChunkStateTrailer) {
-                if (line.length == 0) { self.chunkState = PMChunkStateDone; return YES; }
+            if (self.chunkState == SZChunkStateTrailer) {
+                if (line.length == 0) { self.chunkState = SZChunkStateDone; return YES; }
                 continue;
             }
             if (line.length == 0) continue;   // tolerate stray blank lines
@@ -160,27 +159,27 @@ typedef NS_ENUM(NSInteger, PMChunkState) {
             NSString *hex = semi.location == NSNotFound ? line : [line substringToIndex:semi.location];
             unsigned long long size = strtoull([hex UTF8String], NULL, 16);
             if (size == 0) {
-                self.chunkState = PMChunkStateTrailer;
+                self.chunkState = SZChunkStateTrailer;
                 continue;
             }
             self.chunkRemaining = (long long)size;
-            self.chunkState = PMChunkStateData;
+            self.chunkState = SZChunkStateData;
             continue;
         }
-        if (self.chunkState == PMChunkStateData) {
+        if (self.chunkState == SZChunkStateData) {
             if (len == 0) return NO;
             NSUInteger take = (NSUInteger)MIN((long long)len, self.chunkRemaining);
             [self deliverBodyBytes:bytes length:take];
             [buffer replaceBytesInRange:NSMakeRange(0, take) withBytes:NULL length:0];
             self.chunkRemaining -= take;
-            if (self.chunkRemaining == 0) self.chunkState = PMChunkStateDataEnd;
+            if (self.chunkRemaining == 0) self.chunkState = SZChunkStateDataEnd;
             continue;
         }
-        if (self.chunkState == PMChunkStateDataEnd) {
+        if (self.chunkState == SZChunkStateDataEnd) {
             if (len < 2) return NO;
             // expect CRLF
             [buffer replaceBytesInRange:NSMakeRange(0, 2) withBytes:NULL length:0];
-            self.chunkState = PMChunkStateSize;
+            self.chunkState = SZChunkStateSize;
             continue;
         }
         return YES; // done

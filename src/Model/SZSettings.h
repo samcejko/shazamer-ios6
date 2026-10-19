@@ -13,6 +13,7 @@ typedef NS_ENUM(NSInteger, SZPreferredPlayer) {
 @property (nonatomic) BOOL vibrateOnMatch;
 @property (nonatomic) NSTimeInterval listenDuration;
 @property (nonatomic) SZPreferredPlayer preferredPlayer;
+@property (nonatomic) BOOL verifyTLS;
 
 + (instancetype)sharedSettings;
 - (void)save;

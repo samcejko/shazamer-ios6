@@ -15,6 +15,7 @@
     NSUInteger _targetSampleCount;
     BOOL _isRecording;
 }
+- (void)processAudioBuffer:(AudioQueueBufferRef)buffer;
 @end
 
 static void SZAudioQueueInputCallback(void *inUserData,
