@@ -150,7 +150,10 @@
                 [[SZShazamClient sharedClient] fetchCoverImageForTrack:t completion:^(UIImage *img) {
                     if (img) {
                         dispatch_async(dispatch_get_main_queue(), ^{
-                            [weakSelf->_tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+                            SZHistoryViewController *strongSelf = weakSelf;
+                            if (strongSelf) {
+                                [strongSelf->_tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+                            }
                         });
                     }
                 }];
