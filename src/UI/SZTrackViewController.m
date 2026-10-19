@@ -19,6 +19,7 @@
     UIButton *_tubieButton;
     UIButton *_lyricsButton;
     UIView *_infoCard;
+    UIPopoverController *_activityPopover;
 }
 @end
 
@@ -244,16 +245,30 @@
 {
     NSString *text = [NSString stringWithFormat:L(@"SHARE_TEXT"), _track.title, _track.artist];
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunguarded-availability"
     if ([UIActivityViewController class]) {
         NSMutableArray *items = [NSMutableArray arrayWithObject:text];
         if (_track.coverArtImage) [items addObject:_track.coverArtImage];
         if (_track.appleMusicUrl.length) [items addObject:[NSURL URLWithString:_track.appleMusicUrl]];
 
         UIActivityViewController *avc = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
-        if (SZIsPad() && [avc respondsToSelector:@selector(popoverPresentationController)]) {
-            avc.popoverPresentationController.barButtonItem = self.navigationItem.rightBarButtonItem;
+        if (SZIsPad()) {
+            if ([avc respondsToSelector:@selector(popoverPresentationController)]) {
+                UIPopoverPresentationController *pop = avc.popoverPresentationController;
+                pop.barButtonItem = self.navigationItem.rightBarButtonItem;
+                [self presentViewController:avc animated:YES completion:nil];
+            } else if ([UIPopoverController class]) {
+                _activityPopover = [[UIPopoverController alloc] initWithContentViewController:avc];
+                [_activityPopover presentPopoverFromBarButtonItem:self.navigationItem.rightBarButtonItem
+                                         permittedArrowDirections:UIPopoverArrowDirectionAny
+                                                         animated:YES];
+            } else {
+                [self presentViewController:avc animated:YES completion:nil];
+            }
+        } else {
+            [self presentViewController:avc animated:YES completion:nil];
         }
-        [self presentViewController:avc animated:YES completion:nil];
     } else {
         UIActionSheet *sheet = [[UIActionSheet alloc] initWithTitle:text
                                                            delegate:self
@@ -262,6 +277,7 @@
                                                   otherButtonTitles:L(@"OPEN_IN_YOUTUBE"), L(@"OPEN_IN_SPOTIFY"), nil];
         [sheet showFromBarButtonItem:self.navigationItem.rightBarButtonItem animated:YES];
     }
+#pragma clang diagnostic pop
 }
 
 - (void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex
