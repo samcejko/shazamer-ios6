@@ -100,6 +100,8 @@ static void SZAudioQueueInputCallback(void *inUserData,
     }
 
     /* Check iOS 7+ permission if available */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunguarded-availability"
     if ([session respondsToSelector:@selector(requestRecordPermission:)]) {
         __block BOOL granted = YES;
         [session requestRecordPermission:^(BOOL available) {
@@ -112,6 +114,7 @@ static void SZAudioQueueInputCallback(void *inUserData,
             return NO;
         }
     }
+#pragma clang diagnostic pop
 
     OSStatus status = AudioQueueNewInput(&_audioFormat,
                                         SZAudioQueueInputCallback,
