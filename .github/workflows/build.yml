@@ -42,6 +42,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check HTTP chunk-size boundaries
+        run: python3 tools/check_http_chunk_size.py
+
       - name: Install packages
         run: |
           sudo apt-get update

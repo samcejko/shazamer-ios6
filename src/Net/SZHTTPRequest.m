@@ -1,3 +1,4 @@
+#include <limits.h>
 #import "SZHTTPRequest.h"
 #import "SZTLSSocket.h"
 #import "SZCommon.h"
@@ -26,6 +27,7 @@ typedef NS_ENUM(NSInteger, SZChunkState) {
 @property (nonatomic) long long contentLength;      // -1 unknown
 @property (nonatomic) long long bodyReceived;
 @property (nonatomic) SZChunkState chunkState;
+@property (nonatomic) BOOL bodyError;
 @property (nonatomic) long long chunkRemaining;
 @end
 
@@ -82,7 +84,7 @@ typedef NS_ENUM(NSInteger, SZChunkState) {
     BOOL hasContentType = NO;
     for (NSString *key in self.headers) {
         if ([[key lowercaseString] isEqualToString:@"content-type"]) hasContentType = YES;
-        NSString *value = [[self.headers[key] description] stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
+        NSString *value = [[[self.headers objectForKey:key] description] stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
         [s appendFormat:@"%@: %@\r\n", key, value];
     }
     if (self.body) {
@@ -148,16 +150,33 @@ typedef NS_ENUM(NSInteger, SZChunkState) {
                 if (bytes[i] == '\r' && bytes[i + 1] == '\n') { lineEnd = i; break; }
             }
             if (lineEnd == NSNotFound) return NO;   // need more data
-            NSString *line = [[NSString alloc] initWithBytes:bytes length:lineEnd encoding:NSASCIIStringEncoding] ?: @"";
+            NSString *line = [[NSString alloc] initWithBytes:bytes length:lineEnd encoding:NSASCIIStringEncoding];
+            if (!line) { self.bodyError = YES; return YES; }
             [buffer replaceBytesInRange:NSMakeRange(0, lineEnd + 2) withBytes:NULL length:0];
             if (self.chunkState == SZChunkStateTrailer) {
                 if (line.length == 0) { self.chunkState = SZChunkStateDone; return YES; }
                 continue;
             }
-            if (line.length == 0) continue;   // tolerate stray blank lines
+            if (line.length == 0) { self.bodyError = YES; return YES; }
             NSRange semi = [line rangeOfString:@";"];
             NSString *hex = semi.location == NSNotFound ? line : [line substringToIndex:semi.location];
-            unsigned long long size = strtoull([hex UTF8String], NULL, 16);
+            // Parse every digit and reject overflow before narrowing to signed storage.
+            const char *digits = [hex UTF8String];
+            unsigned long long size = 0;
+            if (!digits || !*digits) { self.bodyError = YES; return YES; }
+            NSUInteger digitCount = [hex lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+            for (NSUInteger i = 0; i < digitCount; i++) {
+                unsigned char c = (unsigned char)digits[i];
+                unsigned int digit;
+                if (c >= '0' && c <= '9') digit = c - '0';
+                else if (c >= 'a' && c <= 'f') digit = c - 'a' + 10;
+                else if (c >= 'A' && c <= 'F') digit = c - 'A' + 10;
+                else { self.bodyError = YES; return YES; }
+                if (size > ((unsigned long long)LLONG_MAX - digit) / 16) {
+                    self.bodyError = YES; return YES;
+                }
+                size = size * 16 + digit;
+            }
             if (size == 0) {
                 self.chunkState = SZChunkStateTrailer;
                 continue;
@@ -177,6 +196,9 @@ typedef NS_ENUM(NSInteger, SZChunkState) {
         }
         if (self.chunkState == SZChunkStateDataEnd) {
             if (len < 2) return NO;
+            if (bytes[0] != '\r' || bytes[1] != '\n') {
+                self.bodyError = YES; return YES;
+            }
             // expect CRLF
             [buffer replaceBytesInRange:NSMakeRange(0, 2) withBytes:NULL length:0];
             self.chunkState = SZChunkStateSize;
@@ -208,9 +230,9 @@ typedef NS_ENUM(NSInteger, SZChunkState) {
         if (error) *error = SZMakeError(SZErrorBadResponse, L(@"The server sent an invalid response."));
         return NO;
     }
-    NSString *statusLine = lines[0];
+    NSString *statusLine = [lines objectAtIndex:0];
     NSArray *parts = [statusLine componentsSeparatedByString:@" "];
-    NSInteger status = parts.count >= 2 ? [parts[1] integerValue] : 0;
+    NSInteger status = parts.count >= 2 ? [[parts objectAtIndex:1] integerValue] : 0;
     if (status <= 0) {
         NSString *trunc = statusLine.length > 80 ? [statusLine substringToIndex:80] : statusLine;
         if (error) *error = SZMakeError(SZErrorBadResponse, [NSString stringWithFormat:L(@"Unexpected response: %@"), trunc]);
@@ -218,19 +240,19 @@ typedef NS_ENUM(NSInteger, SZChunkState) {
     }
     NSMutableDictionary *headers = [NSMutableDictionary dictionary];
     for (NSUInteger i = 1; i < lines.count; i++) {
-        NSString *line = lines[i];
+        NSString *line = [lines objectAtIndex:i];
         NSRange colon = [line rangeOfString:@":"];
         if (colon.location == NSNotFound) continue;
         NSString *name = [[[line substringToIndex:colon.location] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] lowercaseString];
         NSString *value = [[line substringFromIndex:colon.location + 1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-        NSString *existing = headers[name];
-        headers[name] = existing ? [NSString stringWithFormat:@"%@, %@", existing, value] : value;
+        NSString *existing = [headers objectForKey:name];
+        [headers setObject:(existing ? [NSString stringWithFormat:@"%@, %@", existing, value] : value) forKey:name];
     }
     self.statusCode = status;
     self.responseHeaders = headers;
-    NSString *te = [headers[@"transfer-encoding"] lowercaseString];
+    NSString *te = [[headers objectForKey:@"transfer-encoding"] lowercaseString];
     self.chunked = te && [te rangeOfString:@"chunked"].location != NSNotFound;
-    NSString *cl = headers[@"content-length"];
+    NSString *cl = [headers objectForKey:@"content-length"];
     self.contentLength = (cl && !self.chunked) ? [cl longLongValue] : -1;
     return YES;
 }
@@ -315,7 +337,7 @@ typedef NS_ENUM(NSInteger, SZChunkState) {
         if ([self consumeBody:buffer]) bodyDone = YES;
     }
     free(tmp);
-    [self finishWithError:nil];
+    [self finishWithError:self.bodyError ? SZMakeError(SZErrorBadResponse, L(@"The server sent an invalid response.")) : nil];
 }
 
 @end

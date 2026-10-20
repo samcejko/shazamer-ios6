@@ -95,7 +95,7 @@
     } else if (indexPath.section == 1) {
         UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
         NSArray *titles = @[L(@"PLAYER_MUZIKA"), L(@"PLAYER_SPOT6"), L(@"PLAYER_TUBIE"), L(@"PLAYER_WEB")];
-        cell.textLabel.text = titles[indexPath.row];
+        cell.textLabel.text = [titles objectAtIndex:indexPath.row];
         if ([SZSettings sharedSettings].preferredPlayer == indexPath.row) {
             cell.accessoryType = UITableViewCellAccessoryCheckmark;
         } else {

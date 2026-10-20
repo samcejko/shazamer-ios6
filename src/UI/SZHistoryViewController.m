@@ -127,7 +127,7 @@
         cell.imageView.layer.borderWidth = 0.5;
     }
 
-    SZTrack *t = [SZHistoryStore sharedStore].tracks[indexPath.row];
+    SZTrack *t = [[SZHistoryStore sharedStore].tracks objectAtIndex:indexPath.row];
 
     if ([t isPendingOffline]) {
         cell.textLabel.text = L(@"OFFLINE_PENDING");
@@ -167,7 +167,7 @@
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    SZTrack *t = [SZHistoryStore sharedStore].tracks[indexPath.row];
+    SZTrack *t = [[SZHistoryStore sharedStore].tracks objectAtIndex:indexPath.row];
 
     if ([t isPendingOffline]) {
         /* Retry recognition */
