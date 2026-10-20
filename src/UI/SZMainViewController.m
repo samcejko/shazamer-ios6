@@ -63,7 +63,7 @@
     _statusLabel.backgroundColor = [UIColor clearColor];
     _statusLabel.textColor = [SZTheme textPrimary];
     _statusLabel.font = [UIFont boldSystemFontOfSize:SZIsPad() ? 24.0f : 20.0f];
-    _statusLabel.textAlignment = NSTextAlignmentCenter;
+    _statusLabel.textAlignment = UITextAlignmentCenter;
     _statusLabel.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.75];
     _statusLabel.shadowOffset = CGSizeMake(0, -1);
     _statusLabel.text = L(@"TOUCH_TO_SHAZAM");
@@ -75,7 +75,7 @@
     _subStatusLabel.backgroundColor = [UIColor clearColor];
     _subStatusLabel.textColor = [SZTheme textSecondary];
     _subStatusLabel.font = [UIFont systemFontOfSize:SZIsPad() ? 16.0f : 13.0f];
-    _subStatusLabel.textAlignment = NSTextAlignmentCenter;
+    _subStatusLabel.textAlignment = UITextAlignmentCenter;
     _subStatusLabel.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.6];
     _subStatusLabel.shadowOffset = CGSizeMake(0, -1);
     _subStatusLabel.text = @"";

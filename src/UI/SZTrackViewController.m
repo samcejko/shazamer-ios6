@@ -69,7 +69,7 @@
     _titleLabel.backgroundColor = [UIColor clearColor];
     _titleLabel.textColor = [SZTheme textPrimary];
     _titleLabel.font = [UIFont boldSystemFontOfSize:SZIsPad() ? 24.0f : 20.0f];
-    _titleLabel.textAlignment = NSTextAlignmentCenter;
+    _titleLabel.textAlignment = UITextAlignmentCenter;
     _titleLabel.numberOfLines = 2;
     _titleLabel.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.7];
     _titleLabel.shadowOffset = CGSizeMake(0, -1);
@@ -81,7 +81,7 @@
     _artistLabel.backgroundColor = [UIColor clearColor];
     _artistLabel.textColor = [SZTheme accentCyan];
     _artistLabel.font = [UIFont boldSystemFontOfSize:SZIsPad() ? 18.0f : 16.0f];
-    _artistLabel.textAlignment = NSTextAlignmentCenter;
+    _artistLabel.textAlignment = UITextAlignmentCenter;
     _artistLabel.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.6];
     _artistLabel.shadowOffset = CGSizeMake(0, -1);
     _artistLabel.text = _track.artist ?: @"";
@@ -92,7 +92,7 @@
     _albumLabel.backgroundColor = [UIColor clearColor];
     _albumLabel.textColor = [SZTheme textSecondary];
     _albumLabel.font = [UIFont systemFontOfSize:SZIsPad() ? 15.0f : 13.0f];
-    _albumLabel.textAlignment = NSTextAlignmentCenter;
+    _albumLabel.textAlignment = UITextAlignmentCenter;
     _albumLabel.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.5];
     _albumLabel.shadowOffset = CGSizeMake(0, -1);
     NSString *albumYear = _track.album ?: @"";

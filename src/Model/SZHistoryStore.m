@@ -131,7 +131,7 @@
     @synchronized(_tracks) {
         NSUInteger idx = [_tracks indexOfObject:pending];
         if (idx != NSNotFound) {
-            _tracks[idx] = recognized;
+            [_tracks replaceObjectAtIndex:idx withObject:recognized];
         } else {
             [_tracks insertObject:recognized atIndex:0];
         }

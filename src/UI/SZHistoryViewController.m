@@ -48,7 +48,7 @@
     _emptyLabel.backgroundColor = [UIColor clearColor];
     _emptyLabel.textColor = [SZTheme textSecondary];
     _emptyLabel.font = [UIFont systemFontOfSize:16.0];
-    _emptyLabel.textAlignment = NSTextAlignmentCenter;
+    _emptyLabel.textAlignment = UITextAlignmentCenter;
     _emptyLabel.numberOfLines = 3;
     _emptyLabel.text = L(@"HISTORY_EMPTY");
     [self.view addSubview:_emptyLabel];
