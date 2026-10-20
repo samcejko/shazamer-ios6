@@ -11,3 +11,6 @@ Resources/LaunchLogo*.png
 local.json
 tools/local.json
 build.log
+
+__pycache__/
+*.pyc
