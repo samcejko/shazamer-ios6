@@ -38,7 +38,7 @@
 - (NSString *)historyFilePath
 {
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *docDir = paths.firstObject;
+    NSString *docDir = SZFirst(paths);
     return [docDir stringByAppendingPathComponent:@"History.plist"];
 }
 

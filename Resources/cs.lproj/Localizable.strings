@@ -58,3 +58,5 @@
 "ABOUT" = "O aplikaci";
 "VERSION" = "Verze";
 "CREDITS" = "Vyvinuto samcejkem pro retro iOS.\nPřímé volání Shazam API bez meziserverů díky Mbed TLS.";
+
+"RECORDING_FAILED" = "Nahrávání se nepodařilo spustit.";

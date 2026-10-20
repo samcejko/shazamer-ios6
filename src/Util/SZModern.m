@@ -1,4 +1,4 @@
-﻿// SZModern.m - see SZModern.h. Shared by all of samcejko's iOS 6 apps (only the prefix differs).
+// SZModern.m - see SZModern.h. Shared by all of samcejko's iOS 6 apps (only the prefix differs).
 //
 // Compiled twice: with the iOS 9.3 SDK for the armv7 build (deployment target iOS 6.0) and with the iOS 16.5 SDK
 // for the arm64 build (deployment target iOS 14.0). APIs newer than a SDK are behind __IPHONE_OS_VERSION_MAX_ALLOWED,
@@ -6,6 +6,8 @@
 // app's common header (which it does not import) and of the deprecation warnings of the iOS 6 era APIs it bridges.
 #import "SZModern.h"
 #import <objc/runtime.h>
+
+static inline id SZFirst(NSArray *array) { return array.count ? [array objectAtIndex:0] : nil; }
 
 #pragma clang diagnostic ignored "-Wunguarded-availability"
 #pragma clang diagnostic ignored "-Wunguarded-availability-new"
@@ -19,7 +21,7 @@ static NSInteger ORMajorVersion(void)
     static NSInteger major = 0;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
-        major = [[[[UIDevice currentDevice] systemVersion] componentsSeparatedByString:@"."][0] integerValue];
+        major = [[[UIDevice currentDevice] systemVersion] integerValue];
         if (major < 1) major = 6;
     });
     return major;
@@ -43,7 +45,7 @@ UIEdgeInsets SZScreenSafeAreaInsets(void)
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000
     if (ORAtLeast(11)) {
         UIApplication *app = [UIApplication sharedApplication];
-        UIWindow *window = app.keyWindow ?: app.windows.firstObject;
+        UIWindow *window = app.keyWindow ?: SZFirst(app.windows);
         if (window) return window.safeAreaInsets;
     }
 #endif
@@ -516,7 +518,7 @@ UITextField *SZModernSearchBarTextField(UISearchBar *bar)
 #endif
     NSMutableArray *queue = [NSMutableArray arrayWithObject:bar];
     while (queue.count) {
-        UIView *v = queue.firstObject;
+        UIView *v = SZFirst(queue);
         [queue removeObjectAtIndex:0];
         if ([v isKindOfClass:[UITextField class]]) return (UITextField *)v;
         [queue addObjectsFromArray:v.subviews];
@@ -695,8 +697,8 @@ static id (*OROriginalTableInit)(id, SEL, CGRect, UITableViewStyle);
 static BOOL ORIsAppController(UIViewController *vc)
 {
     UIViewController *probe = vc;
-    if ([vc isKindOfClass:[UINavigationController class]]) probe = ((UINavigationController *)vc).viewControllers.firstObject ?: vc;
-    else if ([vc isKindOfClass:[UITabBarController class]]) probe = ((UITabBarController *)vc).viewControllers.firstObject ?: vc;
+    if ([vc isKindOfClass:[UINavigationController class]]) probe = SZFirst(((UINavigationController *)vc).viewControllers) ?: vc;
+    else if ([vc isKindOfClass:[UITabBarController class]]) probe = SZFirst(((UITabBarController *)vc).viewControllers) ?: vc;
     // (the bundle of a class from the executable is the main bundle; a system picker or sheet lives under /System)
     NSBundle *bundle = [NSBundle bundleForClass:[probe class]];
     if (bundle == [NSBundle mainBundle]) return YES;

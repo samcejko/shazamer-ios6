@@ -58,3 +58,5 @@
 "ABOUT" = "About";
 "VERSION" = "Version";
 "CREDITS" = "Developed by samcejko for retro iOS.\nStandalone Mbed TLS stack, direct Shazam API without proxies.";
+
+"RECORDING_FAILED" = "Unable to start recording.";

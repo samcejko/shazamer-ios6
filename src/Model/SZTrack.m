@@ -1,4 +1,5 @@
 #import "SZTrack.h"
+#import "SZCommon.h"
 
 @implementation SZTrack
 
@@ -82,7 +83,7 @@
     if ([hub isKindOfClass:[NSDictionary class]]) {
         NSDictionary *options = hub[@"options"];
         if ([options isKindOfClass:[NSArray class]] && [(NSArray *)options count]) {
-            NSDictionary *firstOpt = [(NSArray *)options firstObject];
+            NSDictionary *firstOpt = SZFirst((NSArray *)options);
             if ([firstOpt isKindOfClass:[NSDictionary class]] && firstOpt[@"actions"]) {
                 for (NSDictionary *act in firstOpt[@"actions"]) {
                     if ([act[@"type"] isEqualToString:@"uri"] && act[@"uri"]) {

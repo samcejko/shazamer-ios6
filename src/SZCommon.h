@@ -31,3 +31,5 @@ enum {
 };
 
 NSError *SZMakeError(NSInteger code, NSString *message);
+
+static inline id SZFirst(NSArray *array) { return array.count ? [array objectAtIndex:0] : nil; }

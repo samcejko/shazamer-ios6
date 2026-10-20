@@ -92,12 +92,13 @@ static uint32_t SZCRC32(const uint8_t *data, size_t length)
     float fftReal[SZ_FFT_BINS];
     float fftImag[SZ_FFT_BINS];
 
-    float fftOutputs[256][SZ_FFT_BINS];
-    memset(fftOutputs, 0, sizeof(fftOutputs));
+    // These histories exceed the stack available on a background worker.
+    __attribute__((objc_precise_lifetime)) NSMutableData *fftStorage = [NSMutableData dataWithLength:256 * SZ_FFT_BINS * sizeof(float)];
+    float (*fftOutputs)[SZ_FFT_BINS] = fftStorage.mutableBytes;
     uint8_t fftOutputsIndex = 0;
 
-    float spreadOutputs[256][SZ_FFT_BINS];
-    memset(spreadOutputs, 0, sizeof(spreadOutputs));
+    __attribute__((objc_precise_lifetime)) NSMutableData *spreadStorage = [NSMutableData dataWithLength:256 * SZ_FFT_BINS * sizeof(float)];
+    float (*spreadOutputs)[SZ_FFT_BINS] = spreadStorage.mutableBytes;
     uint8_t spreadOutputsIndex = 0;
 
     uint32_t numSpreadDone = 0;

@@ -21,6 +21,7 @@
     UILabel *_subStatusLabel;
     UIActivityIndicatorView *_spinner;
     BOOL _isProcessing;
+    NSUInteger _recognitionGeneration;
 }
 @end
 
@@ -100,6 +101,15 @@
     if ([SZSettings sharedSettings].autoListenOnLaunch && !_isProcessing && ![[SZAudioRecorder sharedRecorder] isRecording]) {
         [self startListening];
     }
+}
+
+- (void)viewWillDisappear:(BOOL)animated
+{
+    [super viewWillDisappear:animated];
+    _recognitionGeneration++;
+    [[SZAudioRecorder sharedRecorder] cancelRecording];
+    [[SZShazamClient sharedClient] cancel];
+    [self resetUIState];
 }
 
 - (void)viewWillLayoutSubviews
@@ -201,6 +211,7 @@
         return;
     }
 
+    NSUInteger generation = ++_recognitionGeneration;
     _isProcessing = YES;
     _statusLabel.text = L(@"TAGGING");
     _subStatusLabel.text = @"";
@@ -213,6 +224,7 @@
 
         if (!uri.length) {
             SZMain(^{
+                if (generation != self->_recognitionGeneration) return;
                 [self resetUIState];
                 self->_statusLabel.text = L(@"NO_MATCH");
             });
@@ -221,10 +233,13 @@
 
         SZLog(@"Signature generated successfully (%lu chars). Sending to Shazam...", (unsigned long)uri.length);
 
+        SZMain(^{
+        if (generation != self->_recognitionGeneration) return;
         [[SZShazamClient sharedClient]
             recognizeWithSignatureURI:uri
             sampleMs:sampleMs
             completion:^(SZTrack *track, NSError *recogError) {
+                if (generation != self->_recognitionGeneration) return;
                 [self resetUIState];
 
                 if (recogError) {
@@ -257,6 +272,7 @@
                     self->_statusLabel.text = L(@"NO_MATCH");
                 }
             }];
+        });
     });
 }
 

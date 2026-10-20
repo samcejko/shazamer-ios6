@@ -104,9 +104,10 @@
     req.readTimeout = 20.0;
 
     __weak typeof(self) weakSelf = self;
+    __weak SZHTTPRequest *weakRequest = req;
     req.onComplete = ^(NSInteger status, NSData *respBody, NSError *error) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
-        if (!strongSelf) return;
+        if (!strongSelf || strongSelf->_activeRequest != weakRequest) return;
 
         strongSelf->_activeRequest = nil;
 

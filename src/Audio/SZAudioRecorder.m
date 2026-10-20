@@ -14,8 +14,12 @@
     NSMutableData *_accumulatedPCM;
     NSUInteger _targetSampleCount;
     BOOL _isRecording;
+    BOOL _waitingPermission;
+    NSUInteger _generation;
 }
 - (void)processAudioBuffer:(AudioQueueBufferRef)buffer;
+- (void)processPCMData:(NSData *)data;
+- (BOOL)beginRecording;
 @end
 
 static void SZAudioQueueInputCallback(void *inUserData,
@@ -71,16 +75,14 @@ static void SZAudioQueueInputCallback(void *inUserData,
 
 - (BOOL)isRecording
 {
-    return _isRecording;
+    return _isRecording || _waitingPermission;
 }
 
 - (BOOL)startRecordingWithDuration:(NSTimeInterval)duration
                            onLevel:(SZAudioLevelBlock)levelBlock
                         completion:(SZAudioRecordCompletionBlock)completionBlock
 {
-    if (_isRecording) {
-        [self cancelRecording];
-    }
+    [self cancelRecording];
 
     self.onLevelUpdate = levelBlock;
     self.onComplete = completionBlock;
@@ -89,32 +91,35 @@ static void SZAudioQueueInputCallback(void *inUserData,
 
     [_accumulatedPCM setLength:0];
 
-    /* Configure Audio Session */
     AVAudioSession *session = [AVAudioSession sharedInstance];
-    NSError *sessionError = nil;
-    if ([session respondsToSelector:@selector(setCategory:error:)]) {
-        [session setCategory:AVAudioSessionCategoryPlayAndRecord error:&sessionError];
-    }
-    if ([session respondsToSelector:@selector(setActive:error:)]) {
-        [session setActive:YES error:&sessionError];
-    }
-
-    /* Check iOS 7+ permission if available */
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunguarded-availability"
     if ([session respondsToSelector:@selector(requestRecordPermission:)]) {
-        __block BOOL granted = YES;
-        [session requestRecordPermission:^(BOOL available) {
-            granted = available;
+        _waitingPermission = YES;
+        NSUInteger generation = _generation;
+        [session requestRecordPermission:^(BOOL granted) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (generation != self->_generation || !self->_waitingPermission) return;
+                self->_waitingPermission = NO;
+                if (granted) [self beginRecording];
+                else if (self.onComplete) self.onComplete(nil, SZMakeError(SZErrorMicDenied, L(@"MIC_PERMISSION_DENIED")));
+            });
         }];
-        if (!granted) {
-            if (self.onComplete) {
-                self.onComplete(nil, SZMakeError(SZErrorMicDenied, @"Microphone permission was denied"));
-            }
-            return NO;
-        }
+        return YES;
     }
 #pragma clang diagnostic pop
+    return [self beginRecording];
+}
+
+- (BOOL)beginRecording
+{
+    AVAudioSession *session = [AVAudioSession sharedInstance];
+    NSError *sessionError = nil;
+    if (![session setCategory:AVAudioSessionCategoryPlayAndRecord error:&sessionError] ||
+        ![session setActive:YES error:&sessionError]) {
+        if (self.onComplete) self.onComplete(nil, sessionError);
+        return NO;
+    }
 
     OSStatus status = AudioQueueNewInput(&_audioFormat,
                                         SZAudioQueueInputCallback,
@@ -126,24 +131,32 @@ static void SZAudioQueueInputCallback(void *inUserData,
     if (status != noErr) {
         SZLog(@"AudioQueueNewInput failed with status %d", (int)status);
         if (self.onComplete) {
-            self.onComplete(nil, SZMakeError(SZErrorNetwork, @"Failed to initialize audio recording queue"));
+            self.onComplete(nil, SZMakeError(SZErrorNetwork, L(@"RECORDING_FAILED")));
         }
         return NO;
     }
 
     UInt32 bufferByteSize = (UInt32)(_audioFormat.mSampleRate * SZ_BUFFER_DURATION * _audioFormat.mBytesPerFrame);
     for (int i = 0; i < SZ_NUM_BUFFERS; i++) {
-        AudioQueueAllocateBuffer(_audioQueue, bufferByteSize, &_buffers[i]);
-        AudioQueueEnqueueBuffer(_audioQueue, _buffers[i], 0, NULL);
+        status = AudioQueueAllocateBuffer(_audioQueue, bufferByteSize, &_buffers[i]);
+        if (status == noErr) status = AudioQueueEnqueueBuffer(_audioQueue, _buffers[i], 0, NULL);
+        if (status != noErr) {
+            AudioQueueDispose(_audioQueue, YES);
+            _audioQueue = NULL;
+            if (self.onComplete) self.onComplete(nil, SZMakeError(SZErrorNetwork, L(@"RECORDING_FAILED")));
+            return NO;
+        }
     }
 
+    _isRecording = YES;
     status = AudioQueueStart(_audioQueue, NULL);
     if (status != noErr) {
+        _isRecording = NO;
         SZLog(@"AudioQueueStart failed with status %d", (int)status);
         AudioQueueDispose(_audioQueue, YES);
         _audioQueue = NULL;
         if (self.onComplete) {
-            self.onComplete(nil, SZMakeError(SZErrorNetwork, @"Failed to start audio recording queue"));
+            self.onComplete(nil, SZMakeError(SZErrorNetwork, L(@"RECORDING_FAILED")));
         }
         return NO;
     }
@@ -155,14 +168,24 @@ static void SZAudioQueueInputCallback(void *inUserData,
 
 - (void)processAudioBuffer:(AudioQueueBufferRef)buffer
 {
+    // AudioQueueStop/Dispose must run after this callback has returned.
+    NSData *data = [NSData dataWithBytes:buffer->mAudioData length:buffer->mAudioDataByteSize];
+    NSUInteger generation = _generation;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (generation == self->_generation) [self processPCMData:data];
+    });
+}
+
+- (void)processPCMData:(NSData *)data
+{
     @synchronized(self) {
         if (!_isRecording) return;
 
-        [_accumulatedPCM appendBytes:buffer->mAudioData length:buffer->mAudioDataByteSize];
+        [_accumulatedPCM appendData:data];
 
         /* Calculate RMS Level for UI meter */
-        const int16_t *samples = (const int16_t *)buffer->mAudioData;
-        NSUInteger sampleCount = buffer->mAudioDataByteSize / sizeof(int16_t);
+        const int16_t *samples = (const int16_t *)data.bytes;
+        NSUInteger sampleCount = data.length / sizeof(int16_t);
         double sum = 0.0;
         for (NSUInteger i = 0; i < sampleCount; i++) {
             double normalized = (double)samples[i] / 32768.0;
@@ -210,11 +233,14 @@ static void SZAudioQueueInputCallback(void *inUserData,
 
 - (void)stopRecording
 {
+    if (_waitingPermission) { [self cancelRecording]; return; }
     [self finishRecording];
 }
 
 - (void)cancelRecording
 {
+    _generation++;
+    _waitingPermission = NO;
     if (!_isRecording) return;
     _isRecording = NO;
 
