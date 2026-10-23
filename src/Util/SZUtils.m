@@ -2,8 +2,28 @@
 #import "SZSettings.h"
 #import "SZCommon.h"
 #import "MusicHandoff.h"
+#import <objc/message.h>
 
 @implementation SZUtils
+
++ (BOOL)openURLWithoutBlocking:(NSURL *)url
+{
+    UIApplication *app = [UIApplication sharedApplication];
+    if (!url || ![app canOpenURL:url]) return NO;
+    // Leave the incoming URL/scene callback before launching another app.
+    // The synchronous legacy API can deadlock that transition on modern iOS.
+    dispatch_async(dispatch_get_main_queue(), ^{
+        SEL selector = NSSelectorFromString(@"openURL:options:completionHandler:");
+        if ([app respondsToSelector:selector]) {
+            // Resolve dynamically so the iOS 5 build still uses the 9.3 SDK.
+            ((void (*)(id, SEL, NSURL *, NSDictionary *, void (^)(BOOL)))objc_msgSend)
+                (app, selector, url, @{}, nil);
+        } else {
+            [app openURL:url];
+        }
+    });
+    return YES;
+}
 
 + (BOOL)openServiceURL:(NSString *)value
 {
@@ -13,7 +33,7 @@
     if (![@[@"http", @"https", @"spotify", @"youtube", @"music", @"itms", @"itmss"] containsObject:scheme]) return NO;
     UIApplication *app = [UIApplication sharedApplication];
     if (![scheme isEqualToString:@"http"] && ![scheme isEqualToString:@"https"] && ![app canOpenURL:url]) return NO;
-    return [app openURL:url];
+    return [self openURLWithoutBlocking:url];
 }
 
 + (NSString *)urlEncode:(NSString *)string
@@ -63,7 +83,7 @@
     if (value.length) {
         // Existing releases already play these links; do not send them through a browser.
         NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@://open?%@=%@", scheme, parameter, [self urlEncode:value]]];
-        return [app canOpenURL:url] && [app openURL:url];
+        return [self openURLWithoutBlocking:url];
     }
     NSString *query = [NSString stringWithFormat:@"%@ %@%@", track.title ?: @"", track.artist ?: @"", [scheme isEqualToString:@"tubie"] ? @" audio" : @""];
     NSArray *keys = @[@"q", @"autoplay", @"title", @"artist", @"isrc", @"duration"];
@@ -74,14 +94,14 @@
     }
     // Older receivers show search results; upgraded receivers also resolve and play a confident match.
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@://search?%@", scheme, [parts componentsJoinedByString:@"&"]]];
-    return [app canOpenURL:url] && [app openURL:url];
+    return [self openURLWithoutBlocking:url];
 }
 
 + (void)openInMuzika:(SZTrack *)track
 {
     if ([self handoffTrack:track toScheme:@"muzika" directURL:track.youtubeUrl]) return;
     NSString *query = [self urlEncode:[NSString stringWithFormat:@"%@ %@", track.title ?: @"", track.artist ?: @""]];
-    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[@"https://music.youtube.com/search?q=" stringByAppendingString:query]]];
+    [self openURLWithoutBlocking:[NSURL URLWithString:[@"https://music.youtube.com/search?q=" stringByAppendingString:query]]];
 }
 
 + (void)openInSpot6:(SZTrack *)track
@@ -92,7 +112,7 @@
     if ([self openServiceURL:track.spotifyUrl]) return;
     NSString *query = [self urlEncode:[NSString stringWithFormat:@"%@ %@", track.title ?: @"", track.artist ?: @""]];
     if ([self openServiceURL:[@"spotify:search:" stringByAppendingString:query]]) return;
-    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[@"https://open.spotify.com/search/" stringByAppendingString:query]]];
+    [self openURLWithoutBlocking:[NSURL URLWithString:[@"https://open.spotify.com/search/" stringByAppendingString:query]]];
 }
 
 + (void)openInTubie:(SZTrack *)track
@@ -101,7 +121,7 @@
     if ([self openServiceURL:track.youtubeUrl]) return;
     NSString *query = [self urlEncode:[NSString stringWithFormat:@"%@ %@ audio", track.title ?: @"", track.artist ?: @""]];
     if ([self openServiceURL:[@"youtube://results?search_query=" stringByAppendingString:query]]) return;
-    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[@"https://www.youtube.com/results?search_query=" stringByAppendingString:query]]];
+    [self openURLWithoutBlocking:[NSURL URLWithString:[@"https://www.youtube.com/results?search_query=" stringByAppendingString:query]]];
 }
 
 + (void)openInSafari:(SZTrack *)track
@@ -113,7 +133,7 @@
     NSString *query = [NSString stringWithFormat:@"%@ %@", track.title ?: @"", track.artist ?: @""];
     NSString *encoded = [self urlEncode:query];
     NSURL *web = [NSURL URLWithString:[NSString stringWithFormat:@"https://www.google.com/search?q=%@", encoded]];
-    [app openURL:web];
+    [self openURLWithoutBlocking:web];
 }
 
 + (void)openTrack:(SZTrack *)track inPlayer:(NSInteger)playerIndex
