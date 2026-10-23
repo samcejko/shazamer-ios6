@@ -52,10 +52,8 @@ static CGPathRef SZCreateShazamPath(CGRect rect)
 {
     CGMutablePathRef path = CGPathCreateMutable();
 
-    /* Target 24x24 box scaled and centered in rect */
-    CGFloat s = rect.size.width / 24.0;
-    CGAffineTransform t = CGAffineTransformMakeTranslation(rect.origin.x, rect.origin.y);
-    t = CGAffineTransformScale(t, s, s);
+    // Build in source coordinates, then center the visible glyph rather than its canvas.
+    CGAffineTransform t = CGAffineTransformIdentity;
 
     // Loop 1
     CGPathMoveToPoint(path, &t, 9.872, 16.736);
@@ -95,7 +93,14 @@ static CGPathRef SZCreateShazamPath(CGRect rect)
     CGPathAddCurveToPoint(path, &t, 19.808, 14.067, 19.297, 15.515, 18.282, 16.637);
     CGPathCloseSubpath(path);
 
-    return path;
+    CGRect glyphBounds = CGPathGetPathBoundingBox(path);
+    CGFloat s = MIN(rect.size.width, rect.size.height) / 24.0f;
+    CGAffineTransform fit = CGAffineTransformMake(s, 0, 0, s,
+        CGRectGetMidX(rect) - s * CGRectGetMidX(glyphBounds),
+        CGRectGetMidY(rect) - s * CGRectGetMidY(glyphBounds));
+    CGPathRef centeredPath = CGPathCreateCopyByTransformingPath(path, &fit);
+    CGPathRelease(path);
+    return centeredPath;
 }
 
 - (void)drawRect:(CGRect)rect
@@ -161,7 +166,7 @@ static CGPathRef SZCreateShazamPath(CGRect rect)
     /* Shazam Logo In Center */
     CGFloat logoSize = innerRadius * 1.05f;
     CGRect logoRect = CGRectMake(center.x - logoSize * 0.5f,
-                                 center.y - logoSize * 0.5f + (hl ? 1.0f : 0.0f),
+                                 center.y - logoSize * 0.5f,
                                  logoSize, logoSize);
     CGPathRef logoPath = SZCreateShazamPath(logoRect);
 

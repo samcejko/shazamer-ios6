@@ -1,8 +1,20 @@
 #import "SZUtils.h"
 #import "SZSettings.h"
 #import "SZCommon.h"
+#import "MusicHandoff.h"
 
 @implementation SZUtils
+
++ (BOOL)openServiceURL:(NSString *)value
+{
+    if (!value.length) return NO;
+    NSURL *url = [NSURL URLWithString:value];
+    NSString *scheme = [url.scheme lowercaseString];
+    if (![@[@"http", @"https", @"spotify", @"youtube", @"music", @"itms", @"itmss"] containsObject:scheme]) return NO;
+    UIApplication *app = [UIApplication sharedApplication];
+    if (![scheme isEqualToString:@"http"] && ![scheme isEqualToString:@"https"] && ![app canOpenURL:url]) return NO;
+    return [app openURL:url];
+}
 
 + (NSString *)urlEncode:(NSString *)string
 {
@@ -11,7 +23,7 @@
         NULL,
         (__bridge CFStringRef)string,
         NULL,
-        CFSTR(":/?#[]@!$&'()*+,;="),
+        CFSTR("%:/?#[]@!$&'()*+,;="),
         kCFStringEncodingUTF8
     );
 }
@@ -25,7 +37,8 @@
 + (BOOL)canOpenSpot6
 {
     UIApplication *app = [UIApplication sharedApplication];
-    return [app canOpenURL:[NSURL URLWithString:@"spotify://"]] ||
+    return [app canOpenURL:[NSURL URLWithString:@"sixify://"]] ||
+           [app canOpenURL:[NSURL URLWithString:@"spotify://"]] ||
            [app canOpenURL:[NSURL URLWithString:@"spot6://"]];
 }
 
@@ -36,81 +49,66 @@
            [app canOpenURL:[NSURL URLWithString:@"youtube://"]];
 }
 
-+ (void)openInMuzika:(SZTrack *)track
++ (BOOL)handoffTrack:(SZTrack *)track toScheme:(NSString *)scheme directURL:(NSString *)direct
 {
     UIApplication *app = [UIApplication sharedApplication];
-    NSString *query = [NSString stringWithFormat:@"%@ %@", track.title ?: @"", track.artist ?: @""];
-    NSString *encoded = [self urlEncode:query];
-
-    /* Try direct ISRC search if available */
-    if (track.isrc.length) {
-        NSURL *isrcUrl = [NSURL URLWithString:[NSString stringWithFormat:@"muzika://isrc/%@", track.isrc]];
-        if ([app canOpenURL:isrcUrl]) {
-            [app openURL:isrcUrl];
-            return;
-        }
+    NSString *video = MHYouTubeID(direct), *spotify = MHSpotifyURI(direct);
+    NSString *parameter = nil, *value = nil;
+    if (([scheme isEqualToString:@"muzika"] || [scheme isEqualToString:@"tubie"]) && video.length) {
+        parameter = @"url";
+        value = [@"https://www.youtube.com/watch?v=" stringByAppendingString:video];
+    } else if (([scheme isEqualToString:@"sixify"] || [scheme isEqualToString:@"spot6"]) && spotify.length) {
+        parameter = @"uri"; value = spotify;
     }
-
-    NSURL *searchUrl = [NSURL URLWithString:[NSString stringWithFormat:@"muzika://search?q=%@", encoded]];
-    if ([app canOpenURL:searchUrl]) {
-        [app openURL:searchUrl];
-        return;
+    if (value.length) {
+        // Existing releases already play these links; do not send them through a browser.
+        NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@://open?%@=%@", scheme, parameter, [self urlEncode:value]]];
+        return [app canOpenURL:url] && [app openURL:url];
     }
+    NSString *query = [NSString stringWithFormat:@"%@ %@%@", track.title ?: @"", track.artist ?: @"", [scheme isEqualToString:@"tubie"] ? @" audio" : @""];
+    NSArray *keys = @[@"q", @"autoplay", @"title", @"artist", @"isrc", @"duration"];
+    NSArray *values = @[query, @"1", track.title ?: @"", track.artist ?: @"", track.isrc ?: @"", [NSString stringWithFormat:@"%.0f", track.duration]];
+    NSMutableArray *parts = [NSMutableArray array];
+    for (NSUInteger i = 0; i < keys.count; i++) {
+        [parts addObject:[NSString stringWithFormat:@"%@=%@", [keys objectAtIndex:i], [self urlEncode:[values objectAtIndex:i]]]];
+    }
+    // Older receivers show search results; upgraded receivers also resolve and play a confident match.
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"%@://search?%@", scheme, [parts componentsJoinedByString:@"&"]]];
+    return [app canOpenURL:url] && [app openURL:url];
+}
 
-    /* Fallback to web YouTube Music */
-    NSURL *webUrl = [NSURL URLWithString:[NSString stringWithFormat:@"https://music.youtube.com/search?q=%@", encoded]];
-    [app openURL:webUrl];
++ (void)openInMuzika:(SZTrack *)track
+{
+    if ([self handoffTrack:track toScheme:@"muzika" directURL:track.youtubeUrl]) return;
+    NSString *query = [self urlEncode:[NSString stringWithFormat:@"%@ %@", track.title ?: @"", track.artist ?: @""]];
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[@"https://music.youtube.com/search?q=" stringByAppendingString:query]]];
 }
 
 + (void)openInSpot6:(SZTrack *)track
 {
-    UIApplication *app = [UIApplication sharedApplication];
-    NSString *query = [NSString stringWithFormat:@"%@ %@", track.title ?: @"", track.artist ?: @""];
-    NSString *encoded = [self urlEncode:query];
-
-    NSURL *spotUrl = [NSURL URLWithString:[NSString stringWithFormat:@"spotify:search:%@", encoded]];
-    if ([app canOpenURL:spotUrl]) {
-        [app openURL:spotUrl];
-        return;
-    }
-
-    /* Web fallback */
-    NSURL *webUrl = [NSURL URLWithString:[NSString stringWithFormat:@"https://open.spotify.com/search/%@", encoded]];
-    [app openURL:webUrl];
+    // The sibling app owns sixify/spot6, not the official app's spotify scheme.
+    if ([self handoffTrack:track toScheme:@"sixify" directURL:track.spotifyUrl]) return;
+    if ([self handoffTrack:track toScheme:@"spot6" directURL:track.spotifyUrl]) return;
+    if ([self openServiceURL:track.spotifyUrl]) return;
+    NSString *query = [self urlEncode:[NSString stringWithFormat:@"%@ %@", track.title ?: @"", track.artist ?: @""]];
+    if ([self openServiceURL:[@"spotify:search:" stringByAppendingString:query]]) return;
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[@"https://open.spotify.com/search/" stringByAppendingString:query]]];
 }
 
 + (void)openInTubie:(SZTrack *)track
 {
-    UIApplication *app = [UIApplication sharedApplication];
-    NSString *query = [NSString stringWithFormat:@"%@ %@ audio", track.title ?: @"", track.artist ?: @""];
-    NSString *encoded = [self urlEncode:query];
-
-    NSURL *tubieUrl = [NSURL URLWithString:[NSString stringWithFormat:@"tubie://search?q=%@", encoded]];
-    if ([app canOpenURL:tubieUrl]) {
-        [app openURL:tubieUrl];
-        return;
-    }
-
-    NSURL *ytAppUrl = [NSURL URLWithString:[NSString stringWithFormat:@"youtube://results?search_query=%@", encoded]];
-    if ([app canOpenURL:ytAppUrl]) {
-        [app openURL:ytAppUrl];
-        return;
-    }
-
-    /* Web fallback */
-    NSURL *webUrl = [NSURL URLWithString:[NSString stringWithFormat:@"https://www.youtube.com/results?search_query=%@", encoded]];
-    [app openURL:webUrl];
+    if ([self handoffTrack:track toScheme:@"tubie" directURL:track.youtubeUrl]) return;
+    if ([self openServiceURL:track.youtubeUrl]) return;
+    NSString *query = [self urlEncode:[NSString stringWithFormat:@"%@ %@ audio", track.title ?: @"", track.artist ?: @""]];
+    if ([self openServiceURL:[@"youtube://results?search_query=" stringByAppendingString:query]]) return;
+    [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[@"https://www.youtube.com/results?search_query=" stringByAppendingString:query]]];
 }
 
 + (void)openInSafari:(SZTrack *)track
 {
     UIApplication *app = [UIApplication sharedApplication];
     if (track.appleMusicUrl.length) {
-        NSURL *u = [NSURL URLWithString:track.appleMusicUrl];
-        if (u) {
-            [app openURL:u];
-            return;
-        }
+        if ([self openServiceURL:track.appleMusicUrl]) return;
     }
     NSString *query = [NSString stringWithFormat:@"%@ %@", track.title ?: @"", track.artist ?: @""];
     NSString *encoded = [self urlEncode:query];

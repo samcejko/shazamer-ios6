@@ -60,3 +60,17 @@
 "CREDITS" = "Developed by samcejko for retro iOS.\nStandalone Mbed TLS stack, direct Shazam API without proxies.";
 
 "RECORDING_FAILED" = "Unable to start recording.";
+
+"LISTENING_LONGER" = "Listening longer for a better match";
+"RETRYING_LONGER" = "No match yet. Listening again…";
+"TAP_TO_CANCEL" = "Tap the button to cancel";
+"AUDIO_TOO_QUIET" = "The recording is too quiet.";
+"MOVE_CLOSER" = "Move closer to the music and try again.";
+"ALL_TRACKS" = "All";
+"FAVORITES" = "Favorites";
+"ADD_FAVORITE" = "☆ Add to favorites";
+"REMOVE_FAVORITE" = "★ Remove from favorites";
+"FAVORITES_EMPTY" = "No favorite songs yet.\nOpen a song and tap the star to save it here.";
+"SEARCH_HISTORY" = "Search songs, artists or albums";
+"SEARCH_EMPTY" = "No songs match your search.";
+"TRACK_DURATION" = "Duration";

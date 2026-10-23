@@ -1,5 +1,7 @@
 #import <Foundation/Foundation.h>
 #import "SZSignatureGenerator.h"
+#include "../src/Audio/SZAudioAnalysis.h"
+#include "MusicHandoff.h"
 #include <pthread.h>
 #include <math.h>
 #include <assert.h>
@@ -22,6 +24,21 @@ static void validate(NSData *d) {
 }
 static void *exercise(void *unused) {
     @autoreleasepool {
+        int16_t audio[16000] = {0};
+        assert(!SZPCMHasAudibleSignal(audio, 16000));
+        for (int i=0;i<16000;i++) audio[i]=1200;
+        assert(!SZPCMHasAudibleSignal(audio, 16000));
+        memset(audio,0,sizeof(audio)); audio[0]=30000;
+        assert(!SZPCMHasAudibleSignal(audio,16000));
+        for (int i=0;i<16000;i++) audio[i]=(int16_t)(1000*sin(i*0.12));
+        assert(SZPCMHasAudibleSignal(audio,16000));
+        assert([MHYouTubeID(@"https://www.youtube.com/watch?v=jNQXAC9IVRw") isEqualToString:@"jNQXAC9IVRw"]);
+        assert(!MHYouTubeID(@"https://youtube.com.evil.example/watch?v=jNQXAC9IVRw"));
+        assert(MHSpotifyURI(@"https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"));
+        assert(!MHSpotifyURI(@"https://open.spotify.com/album/4uLU6hMCjMI75M1A2tKUQC"));
+        assert(MHMatches(@"Светлана", @"NEXTIME", 180, @"Светлана", @"NEXTIME", 181, NO));
+        assert(!MHMatches(@"Светлана", @"NEXTIME", 180, @"Светлана (cover)", @"NEXTIME", 181, NO));
+        fprintf(stderr,"Silence detection and music handoff regression PASS\n");
         assert(![SZSignatureGenerator signatureBinaryFromPCMBuffer:NULL count:0]);
         for (int seconds=4; seconds<=12; seconds+=4) {
             @autoreleasepool {

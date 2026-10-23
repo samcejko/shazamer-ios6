@@ -19,6 +19,9 @@
 @property (nonatomic, copy) NSString *isrc;
 @property (nonatomic, strong) NSDate *tagDate;
 @property (nonatomic, copy) NSString *pendingSignatureURI;
+@property (nonatomic) BOOL favorite;
+@property (nonatomic) NSTimeInterval duration;
+@property (nonatomic) NSUInteger pendingSampleMs;
 
 - (BOOL)isPendingOffline;
 

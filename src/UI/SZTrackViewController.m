@@ -1,6 +1,7 @@
 #import "SZTrackViewController.h"
 #import "SZLyricsViewController.h"
 #import "SZShazamClient.h"
+#import "SZHistoryStore.h"
 #import "SZUtils.h"
 #import "SZTheme.h"
 #import "SZCommon.h"
@@ -18,6 +19,8 @@
     UIButton *_spot6Button;
     UIButton *_tubieButton;
     UIButton *_lyricsButton;
+    UIButton *_favoriteButton;
+    UIButton *_appleMusicButton;
     UIView *_infoCard;
     UIPopoverController *_activityPopover;
 }
@@ -87,20 +90,41 @@
     _artistLabel.text = _track.artist ?: @"";
     [_scrollView addSubview:_artistLabel];
 
-    // Album & Year
+    // Only show metadata supplied by the recognition service.
     _albumLabel = [[UILabel alloc] init];
     _albumLabel.backgroundColor = [UIColor clearColor];
     _albumLabel.textColor = [SZTheme textSecondary];
     _albumLabel.font = [UIFont systemFontOfSize:SZIsPad() ? 15.0f : 13.0f];
-    _albumLabel.textAlignment = UITextAlignmentCenter;
+    _albumLabel.textAlignment = UITextAlignmentLeft;
+    _albumLabel.numberOfLines = 0;
     _albumLabel.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.5];
     _albumLabel.shadowOffset = CGSizeMake(0, -1);
-    NSString *albumYear = _track.album ?: @"";
-    if (_track.releaseDate.length) {
-        albumYear = albumYear.length ? [NSString stringWithFormat:@"%@ (%@)", albumYear, _track.releaseDate] : _track.releaseDate;
+    NSMutableArray *details = [NSMutableArray array];
+    NSArray *fields = @[@[L(@"ALBUM"), _track.album ?: @""],
+                        @[L(@"RELEASE_DATE"), _track.releaseDate ?: @""],
+                        @[L(@"GENRE"), _track.genre ?: @""],
+                        @[L(@"LABEL"), _track.label ?: @""],
+                        @[@"ISRC", _track.isrc ?: @""]];
+    for (NSArray *field in fields) if ([[field objectAtIndex:1] length]) {
+        [details addObject:[NSString stringWithFormat:@"%@: %@", [field objectAtIndex:0], [field objectAtIndex:1]]];
     }
-    _albumLabel.text = albumYear;
+    if (_track.duration > 0) {
+        NSUInteger seconds = (NSUInteger)_track.duration;
+        NSString *duration = seconds >= 3600
+            ? [NSString stringWithFormat:@"%lu:%02lu:%02lu", (unsigned long)(seconds / 3600), (unsigned long)((seconds / 60) % 60), (unsigned long)(seconds % 60)]
+            : [NSString stringWithFormat:@"%lu:%02lu", (unsigned long)(seconds / 60), (unsigned long)(seconds % 60)];
+        [details addObject:[NSString stringWithFormat:@"%@: %@", L(@"TRACK_DURATION"), duration]];
+    }
+    _albumLabel.text = [details componentsJoinedByString:@"\n"];
     [_scrollView addSubview:_albumLabel];
+
+    _favoriteButton = [self createActionButtonWithTitle:@"" tint:[SZTheme shazamBlue] action:@selector(toggleFavorite)];
+    [_scrollView addSubview:_favoriteButton];
+    [self updateFavoriteButton];
+    if (_track.appleMusicUrl.length) {
+        _appleMusicButton = [self createActionButtonWithTitle:L(@"OPEN_IN_APPLE_MUSIC") tint:[SZTheme shazamBlue] action:@selector(openAppleMusic)];
+        [_scrollView addSubview:_appleMusicButton];
+    }
 
     // Player action buttons
     _muzikaButton = [self createActionButtonWithTitle:L(@"PLAY_IN_MUZIKA")
@@ -186,20 +210,29 @@
     CGFloat y = CGRectGetMaxY(_coverImageView.frame) + 16.0f;
     CGFloat textWidth = width - 32.0f;
 
-    _titleLabel.frame = CGRectMake(16.0f, y, textWidth, 26.0f);
-    y += 28.0f;
+    CGFloat titleHeight = MAX(26.0f, [_titleLabel sizeThatFits:CGSizeMake(textWidth, CGFLOAT_MAX)].height);
+    _titleLabel.frame = CGRectMake(16.0f, y, textWidth, titleHeight);
+    y += titleHeight + 4.0f;
 
     _artistLabel.frame = CGRectMake(16.0f, y, textWidth, 22.0f);
     y += 24.0f;
 
     if (_albumLabel.text.length) {
-        _albumLabel.frame = CGRectMake(16.0f, y, textWidth, 18.0f);
-        y += 26.0f;
+        CGFloat detailsHeight = [_albumLabel sizeThatFits:CGSizeMake(textWidth, CGFLOAT_MAX)].height;
+        _albumLabel.frame = CGRectMake(16.0f, y, textWidth, detailsHeight);
+        y += detailsHeight + 12.0f;
     }
 
     y += 8.0f;
     CGFloat btnWidth = SZIsPad() ? 320.0f : (width - 40.0f);
     CGFloat btnX = (width - btnWidth) * 0.5f;
+
+    _favoriteButton.frame = CGRectMake(btnX, y, btnWidth, 42.0f);
+    y += 48.0f;
+    if (_appleMusicButton) {
+        _appleMusicButton.frame = CGRectMake(btnX, y, btnWidth, 42.0f);
+        y += 48.0f;
+    }
 
     _muzikaButton.frame = CGRectMake(btnX, y, btnWidth, 42.0f);
     y += 48.0f;
@@ -221,6 +254,23 @@
 - (void)openMuzika
 {
     [SZUtils openInMuzika:_track];
+}
+
+- (void)updateFavoriteButton
+{
+    [_favoriteButton setTitle:_track.favorite ? L(@"REMOVE_FAVORITE") : L(@"ADD_FAVORITE") forState:UIControlStateNormal];
+    _favoriteButton.accessibilityLabel = _track.favorite ? L(@"REMOVE_FAVORITE") : L(@"ADD_FAVORITE");
+}
+
+- (void)toggleFavorite
+{
+    [[SZHistoryStore sharedStore] setFavorite:!_track.favorite forTrack:_track];
+    [self updateFavoriteButton];
+}
+
+- (void)openAppleMusic
+{
+    [SZUtils openInSafari:_track];
 }
 
 - (void)openSpot6

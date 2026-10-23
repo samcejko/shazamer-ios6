@@ -85,6 +85,7 @@
         if (track.trackId.length) {
             for (SZTrack *existing in _tracks) {
                 if ([existing.trackId isEqualToString:track.trackId]) {
+                    if (existing.favorite) track.favorite = YES;
                     NSTimeInterval diff = [track.tagDate timeIntervalSinceDate:existing.tagDate];
                     if (fabs(diff) < 600.0) {
                         return;
@@ -115,6 +116,24 @@
     [self save];
 }
 
+- (void)removeTrack:(SZTrack *)track
+{
+    @synchronized(_tracks) { [_tracks removeObjectIdenticalTo:track]; }
+    [self save];
+}
+
+- (void)setFavorite:(BOOL)favorite forTrack:(SZTrack *)track
+{
+    if (!track || [track isPendingOffline]) return;
+    @synchronized(_tracks) {
+        track.favorite = favorite;
+        for (SZTrack *existing in _tracks) {
+            if (existing == track || (track.trackId.length && [existing.trackId isEqualToString:track.trackId])) existing.favorite = favorite;
+        }
+    }
+    [self save];
+}
+
 - (SZTrack *)pendingOfflineTrack
 {
     @synchronized(_tracks) {
@@ -128,6 +147,8 @@
 - (void)replacePendingTrack:(SZTrack *)pending withTrack:(SZTrack *)recognized
 {
     if (!pending || !recognized) return;
+    recognized.tagDate = pending.tagDate;
+    recognized.favorite = pending.favorite;
     @synchronized(_tracks) {
         NSUInteger idx = [_tracks indexOfObject:pending];
         if (idx != NSNotFound) {

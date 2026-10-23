@@ -9,6 +9,8 @@
 
 - (void)addTrack:(SZTrack *)track;
 - (void)removeTrackAtIndex:(NSUInteger)index;
+- (void)removeTrack:(SZTrack *)track;
+- (void)setFavorite:(BOOL)favorite forTrack:(SZTrack *)track;
 - (void)clearHistory;
 - (void)save;
 - (void)load;

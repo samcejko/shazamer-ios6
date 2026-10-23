@@ -60,3 +60,17 @@
 "CREDITS" = "Vyvinuto samcejkem pro retro iOS.\nPřímé volání Shazam API bez meziserverů díky Mbed TLS.";
 
 "RECORDING_FAILED" = "Nahrávání se nepodařilo spustit.";
+
+"LISTENING_LONGER" = "Poslouchám déle pro přesnější výsledek";
+"RETRYING_LONGER" = "Zatím nenalezeno. Poslouchám znovu…";
+"TAP_TO_CANCEL" = "Klepnutím na tlačítko zrušíte poslech";
+"AUDIO_TOO_QUIET" = "Nahrávka je příliš tichá.";
+"MOVE_CLOSER" = "Přibližte se k hudbě a zkuste to znovu.";
+"ALL_TRACKS" = "Vše";
+"FAVORITES" = "Oblíbené";
+"ADD_FAVORITE" = "☆ Přidat do oblíbených";
+"REMOVE_FAVORITE" = "★ Odebrat z oblíbených";
+"FAVORITES_EMPTY" = "Zatím žádné oblíbené skladby.\nOtevřete skladbu a označte ji hvězdičkou.";
+"SEARCH_HISTORY" = "Hledat skladbu, interpreta nebo album";
+"SEARCH_EMPTY" = "Hledání neodpovídají žádné skladby.";
+"TRACK_DURATION" = "Délka";

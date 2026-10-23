@@ -2,6 +2,7 @@
 #import "SZTagButton.h"
 #import "SZRadarView.h"
 #import "SZAudioRecorder.h"
+#import "SZAudioAnalysis.h"
 #import "SZSignatureGenerator.h"
 #import "SZShazamClient.h"
 #import "SZHistoryStore.h"
@@ -22,6 +23,8 @@
     UIActivityIndicatorView *_spinner;
     BOOL _isProcessing;
     NSUInteger _recognitionGeneration;
+    BOOL _hasRetried;
+    NSTimeInterval _listenDuration;
 }
 @end
 
@@ -127,8 +130,11 @@
 
     _tagButton.center = CGPointMake(centerX, centerY);
     _radarView.frame = bounds;
+    _radarView.pulseCenter = [_radarView convertPoint:_tagButton.center fromView:self.view];
+    _radarView.buttonRadius = MIN(_tagButton.bounds.size.width, _tagButton.bounds.size.height) * 0.5f - 6.0f;
 
-    CGFloat btnSize = _tagButton.frame.size.height;
+    // Highlight/pulse transforms must not move the text during a layout pass.
+    CGFloat btnSize = _tagButton.bounds.size.height;
     CGFloat labelWidth = bounds.size.width - 40.0f;
 
     _statusLabel.frame = CGRectMake((bounds.size.width - labelWidth) * 0.5f,
@@ -159,7 +165,13 @@
 
 - (void)tagButtonTapped
 {
-    if (_isProcessing) return;
+    if (_isProcessing) {
+        _recognitionGeneration++;
+        [[SZShazamClient sharedClient] cancel];
+        [[SZAudioRecorder sharedRecorder] cancelRecording];
+        [self resetUIState];
+        return;
+    }
 
     if ([[SZAudioRecorder sharedRecorder] isRecording]) {
         // User tapped while listening -> Cancel
@@ -172,15 +184,24 @@
 
 - (void)startListening
 {
-    NSTimeInterval duration = [SZSettings sharedSettings].listenDuration;
+    _hasRetried = NO;
+    [self beginListeningWithDuration:[SZSettings sharedSettings].listenDuration];
+}
+
+- (void)beginListeningWithDuration:(NSTimeInterval)duration
+{
+    _recognitionGeneration++;
+    _listenDuration = MIN(15.0, MAX(3.0, duration));
+    _isProcessing = NO;
+    [_spinner stopAnimating];
     _statusLabel.text = L(@"LISTENING");
-    _subStatusLabel.text = @"";
+    _subStatusLabel.text = _hasRetried ? L(@"LISTENING_LONGER") : @"";
     [_tagButton startListeningPulse];
     [_radarView startPulsing];
 
     __weak typeof(self) weakSelf = self;
     BOOL started = [[SZAudioRecorder sharedRecorder]
-        startRecordingWithDuration:duration
+        startRecordingWithDuration:_listenDuration
         onLevel:^(float level) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
             if (strongSelf) {
@@ -220,6 +241,15 @@
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         NSUInteger count = pcmData.length / sizeof(int16_t);
         NSUInteger sampleMs = (NSUInteger)((double)count / 16000.0 * 1000.0);
+        if (!SZPCMHasAudibleSignal(pcmData.bytes, count)) {
+            SZMain(^{
+                if (generation != self->_recognitionGeneration) return;
+                [self resetUIState];
+                self->_statusLabel.text = L(@"AUDIO_TOO_QUIET");
+                self->_subStatusLabel.text = L(@"MOVE_CLOSER");
+            });
+            return;
+        }
         NSString *uri = [SZSignatureGenerator signatureURIFromPCMData:pcmData];
 
         if (!uri.length) {
@@ -243,10 +273,22 @@
                 [self resetUIState];
 
                 if (recogError) {
+                    if (recogError.code == SZErrorNoMatch && !self->_hasRetried) {
+                        self->_hasRetried = YES;
+                        self->_isProcessing = YES;
+                        self->_statusLabel.text = L(@"RETRYING_LONGER");
+                        self->_subStatusLabel.text = L(@"TAP_TO_CANCEL");
+                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                            if (generation != self->_recognitionGeneration) return;
+                            [self beginListeningWithDuration:MAX(10.0, self->_listenDuration + 4.0)];
+                        });
+                        return;
+                    }
                     if (recogError.code == SZErrorNetwork) {
                         // Offline: save signature to history for later tagging
                         SZTrack *offlineTrack = [[SZTrack alloc] init];
                         offlineTrack.pendingSignatureURI = uri;
+                        offlineTrack.pendingSampleMs = sampleMs;
                         offlineTrack.tagDate = [NSDate date];
                         [[SZHistoryStore sharedStore] addTrack:offlineTrack];
                         self->_statusLabel.text = L(@"OFFLINE_SAVED");

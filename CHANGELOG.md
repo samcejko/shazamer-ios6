@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Replace the unsupported Muzika ISRC route with backward-compatible direct-play/search handoffs; add recognized-song autoplay receivers in Muzika, Sixify and Tubie source trees.
+
+- Align the radar, button and visible glyph; keep labels stable during button animations.
+- Retry an unmatched song once with a longer 10–15 second recording; allow cancellation throughout processing.
+- Detect near-silent recordings locally before generating or sending a fingerprint.
+- Persist favorite songs and filter history to favorites.
+- Search history by song, artist or album, ignoring case and diacritics; delete the selected filtered item safely.
+- Show available album, release date, genre, label, ISRC and duration, with available music-service links.
+- Keep compatibility with existing history entries and save the actual duration of pending offline fingerprints.
+
+Source changes only: no package build or deployment requested for these additions.
+
 ## [1.0.2] - 2026-10-24
 
 - Ship the worker-stack crash fix: fingerprint histories live in heap storage, retained for the whole calculation.

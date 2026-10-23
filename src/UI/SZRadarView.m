@@ -20,6 +20,8 @@
         _phases[1] = 0.33f;
         _phases[2] = 0.66f;
         _audioLevel = 0.0f;
+        _pulseCenter = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
+        _buttonRadius = 84.0f;
     }
     return self;
 }
@@ -52,6 +54,18 @@
     _audioLevel = fmaxf(0.0f, fminf(1.0f, audioLevel));
 }
 
+- (void)setPulseCenter:(CGPoint)pulseCenter
+{
+    _pulseCenter = pulseCenter;
+    [self setNeedsDisplay];
+}
+
+- (void)setButtonRadius:(CGFloat)buttonRadius
+{
+    _buttonRadius = buttonRadius;
+    [self setNeedsDisplay];
+}
+
 - (void)animTick
 {
     float speed = 0.015f + (_audioLevel * 0.025f);
@@ -67,10 +81,10 @@
 - (void)drawRect:(CGRect)rect
 {
     CGContextRef ctx = UIGraphicsGetCurrentContext();
-    CGPoint center = CGPointMake(CGRectGetMidX(rect), CGRectGetMidY(rect));
+    CGPoint center = _pulseCenter;
 
-    CGFloat baseRadius = 88.0;
-    CGFloat maxRadius = fminf(rect.size.width, rect.size.height) * 0.48;
+    CGFloat baseRadius = _buttonRadius;
+    CGFloat maxRadius = MAX(baseRadius, MIN(self.bounds.size.width, self.bounds.size.height) * 0.48f);
 
     if (_isPulsing) {
         for (int i = 0; i < 3; i++) {

@@ -5,6 +5,7 @@
 #import "SZTLSSocket.h"
 #import "SZHistoryStore.h"
 #import "SZCommon.h"
+#import "SZDebug.h"
 
 @implementation SZAppDelegate
 
@@ -34,6 +35,7 @@
 - (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
 {
     if ([[url.scheme lowercaseString] isEqualToString:@"shazamer"]) {
+        if (SZHandleDebugURL(url, self.window, self.navigationController)) return YES;
         UIViewController *top = self.navigationController.topViewController;
         if ([top isKindOfClass:[SZMainViewController class]]) {
             SZMainViewController *main = (SZMainViewController *)top;

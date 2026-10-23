@@ -122,15 +122,19 @@
             return;
         }
 
-        if (status != 200 || !respBody.length) {
-            if (completion) completion(nil, SZMakeError(SZErrorNoMatch, L(@"NO_MATCH")));
+        if (status != 200) {
+            if (completion) completion(nil, SZMakeError(SZErrorBadResponse, L(@"ERROR_NETWORK")));
+            return;
+        }
+        if (!respBody.length) {
+            if (completion) completion(nil, SZMakeError(SZErrorBadResponse, L(@"ERROR_NETWORK")));
             return;
         }
 
         NSError *parseError = nil;
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:respBody options:0 error:&parseError];
         if (![json isKindOfClass:[NSDictionary class]]) {
-            if (completion) completion(nil, SZMakeError(SZErrorNoMatch, L(@"NO_MATCH")));
+            if (completion) completion(nil, SZMakeError(SZErrorBadResponse, L(@"ERROR_NETWORK")));
             return;
         }
 

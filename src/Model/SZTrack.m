@@ -1,5 +1,21 @@
 #import "SZTrack.h"
 #import "SZCommon.h"
+#include <math.h>
+
+static NSString *SZTrackString(id value)
+{
+    return [value isKindOfClass:[NSString class]] ? value : nil;
+}
+
+static NSTimeInterval SZTrackDuration(id value)
+{
+    if ([value isKindOfClass:[NSNumber class]]) return isfinite([value doubleValue]) ? MIN(86400.0, MAX(0, [value doubleValue])) : 0;
+    if (![value isKindOfClass:[NSString class]]) return 0;
+    NSArray *parts = [value componentsSeparatedByString:@":"];
+    double seconds = 0;
+    for (NSString *part in parts) seconds = seconds * 60 + [part doubleValue];
+    return isfinite(seconds) ? MIN(86400.0, MAX(0, seconds)) : 0;
+}
 
 @implementation SZTrack
 
@@ -32,37 +48,43 @@
     }
 
     SZTrack *t = [[SZTrack alloc] init];
-    t.trackId = [NSString stringWithFormat:@"%@", [trackDict objectForKey:@"key"] ?: [trackDict objectForKey:@"id"] ?: @""];
-    t.title = [[trackDict objectForKey:@"title"] description] ?: @"Unknown Title";
-    t.artist = [[trackDict objectForKey:@"subtitle"] description] ?: @"Unknown Artist";
+    id key = [trackDict objectForKey:@"key"] ?: [trackDict objectForKey:@"id"];
+    t.trackId = [key isKindOfClass:[NSString class]] || [key isKindOfClass:[NSNumber class]] ? [key description] : @"";
+    t.title = SZTrackString([trackDict objectForKey:@"title"]);
+    t.artist = SZTrackString([trackDict objectForKey:@"subtitle"]);
+    if (!t.title.length || !t.artist.length) return nil;
+    t.duration = SZTrackDuration([trackDict objectForKey:@"duration"]);
 
     NSDictionary *images = [trackDict objectForKey:@"images"];
     if ([images isKindOfClass:[NSDictionary class]]) {
-        t.coverArtUrl = [images objectForKey:@"coverart"] ?: [images objectForKey:@"background"];
+        t.coverArtUrl = SZTrackString([images objectForKey:@"coverart"]) ?: SZTrackString([images objectForKey:@"background"]);
     }
 
     NSArray *sections = [trackDict objectForKey:@"sections"];
     if ([sections isKindOfClass:[NSArray class]]) {
         for (NSDictionary *section in sections) {
             if (![section isKindOfClass:[NSDictionary class]]) continue;
-            NSString *type = [section objectForKey:@"type"];
+            NSString *type = SZTrackString([section objectForKey:@"type"]);
 
             if ([type isEqualToString:@"SONG"]) {
                 NSArray *meta = [section objectForKey:@"metadata"];
                 if ([meta isKindOfClass:[NSArray class]]) {
                     for (NSDictionary *item in meta) {
                         if (![item isKindOfClass:[NSDictionary class]]) continue;
-                        NSString *title = [item objectForKey:@"title"];
-                        NSString *text = [item objectForKey:@"text"];
+                        NSString *title = SZTrackString([item objectForKey:@"title"]);
+                        NSString *text = SZTrackString([item objectForKey:@"text"]);
                         if ([title isEqualToString:@"Album"]) t.album = text;
                         else if ([title isEqualToString:@"Released"]) t.releaseDate = text;
                         else if ([title isEqualToString:@"Label"]) t.label = text;
+                        else if ([title isEqualToString:@"Duration"]) t.duration = SZTrackDuration(text);
                     }
                 }
             } else if ([type isEqualToString:@"LYRICS"]) {
                 NSArray *text = [section objectForKey:@"text"];
                 if ([text isKindOfClass:[NSArray class]]) {
-                    t.lyricsLines = text;
+                    NSMutableArray *lines = [NSMutableArray array];
+                    for (id line in text) if (SZTrackString(line)) [lines addObject:line];
+                    t.lyricsLines = lines;
                 }
             }
         }
@@ -71,25 +93,39 @@
     /* Genres */
     NSDictionary *genres = [trackDict objectForKey:@"genres"];
     if ([genres isKindOfClass:[NSDictionary class]] && [genres objectForKey:@"primary"]) {
-        t.genre = [[genres objectForKey:@"primary"] description];
+        t.genre = SZTrackString([genres objectForKey:@"primary"]);
     }
 
     /* ISRC */
-    t.isrc = [[trackDict objectForKey:@"isrc"] description];
+    t.isrc = SZTrackString([trackDict objectForKey:@"isrc"]);
 
     /* External URLs */
-    t.appleMusicUrl = [[trackDict objectForKey:@"url"] description];
+    // The top-level url is a Shazam page, not an Apple Music deep link.
     NSDictionary *hub = [trackDict objectForKey:@"hub"];
     if ([hub isKindOfClass:[NSDictionary class]]) {
-        NSDictionary *options = [hub objectForKey:@"options"];
+        id options = [hub objectForKey:@"options"];
         if ([options isKindOfClass:[NSArray class]] && [(NSArray *)options count]) {
             NSDictionary *firstOpt = SZFirst((NSArray *)options);
-            if ([firstOpt isKindOfClass:[NSDictionary class]] && [firstOpt objectForKey:@"actions"]) {
+            if ([firstOpt isKindOfClass:[NSDictionary class]] && [[firstOpt objectForKey:@"actions"] isKindOfClass:[NSArray class]]) {
                 for (NSDictionary *act in [firstOpt objectForKey:@"actions"]) {
-                    if ([[act objectForKey:@"type"] isEqualToString:@"uri"] && [act objectForKey:@"uri"]) {
-                        t.appleMusicUrl = [act objectForKey:@"uri"];
+                    if ([act isKindOfClass:[NSDictionary class]] && [SZTrackString([act objectForKey:@"type"]) isEqualToString:@"uri"] && SZTrackString([act objectForKey:@"uri"])) {
+                        t.appleMusicUrl = SZTrackString([act objectForKey:@"uri"]);
                     }
                 }
+            }
+        }
+        id providers = [hub objectForKey:@"providers"];
+        if ([providers isKindOfClass:[NSArray class]]) for (id provider in providers) {
+            if (![provider isKindOfClass:[NSDictionary class]]) continue;
+            NSString *type = [SZTrackString([provider objectForKey:@"type"]) lowercaseString];
+            id actions = [provider objectForKey:@"actions"];
+            if (![actions isKindOfClass:[NSArray class]]) continue;
+            for (id action in actions) {
+                if (![action isKindOfClass:[NSDictionary class]]) continue;
+                NSString *uri = SZTrackString([action objectForKey:@"uri"]);
+                if (!uri.length) continue;
+                if ([type isEqualToString:@"spotify"]) t.spotifyUrl = uri;
+                if ([type isEqualToString:@"youtube"]) t.youtubeUrl = uri;
             }
         }
     }
@@ -102,30 +138,40 @@
 {
     self = [super init];
     if (self && [dict isKindOfClass:[NSDictionary class]]) {
-        _trackId = [[dict objectForKey:@"trackId"] copy];
-        _title = [[dict objectForKey:@"title"] copy];
-        _artist = [[dict objectForKey:@"artist"] copy];
-        _album = [[dict objectForKey:@"album"] copy];
-        _genre = [[dict objectForKey:@"genre"] copy];
-        _releaseDate = [[dict objectForKey:@"releaseDate"] copy];
-        _label = [[dict objectForKey:@"label"] copy];
-        _coverArtUrl = [[dict objectForKey:@"coverArtUrl"] copy];
-        _lyricsLines = [[dict objectForKey:@"lyricsLines"] copy];
-        _appleMusicUrl = [[dict objectForKey:@"appleMusicUrl"] copy];
-        _youtubeUrl = [[dict objectForKey:@"youtubeUrl"] copy];
-        _spotifyUrl = [[dict objectForKey:@"spotifyUrl"] copy];
-        _isrc = [[dict objectForKey:@"isrc"] copy];
-        _pendingSignatureURI = [[dict objectForKey:@"pendingSignatureURI"] copy];
+        _trackId = [SZTrackString([dict objectForKey:@"trackId"]) copy];
+        _title = [SZTrackString([dict objectForKey:@"title"]) copy];
+        _artist = [SZTrackString([dict objectForKey:@"artist"]) copy];
+        _album = [SZTrackString([dict objectForKey:@"album"]) copy];
+        _genre = [SZTrackString([dict objectForKey:@"genre"]) copy];
+        _releaseDate = [SZTrackString([dict objectForKey:@"releaseDate"]) copy];
+        _label = [SZTrackString([dict objectForKey:@"label"]) copy];
+        _coverArtUrl = [SZTrackString([dict objectForKey:@"coverArtUrl"]) copy];
+        id lines = [dict objectForKey:@"lyricsLines"];
+        if ([lines isKindOfClass:[NSArray class]]) {
+            NSMutableArray *safeLines = [NSMutableArray array];
+            for (id line in lines) if (SZTrackString(line)) [safeLines addObject:line];
+            _lyricsLines = [safeLines copy];
+        }
+        _appleMusicUrl = [SZTrackString([dict objectForKey:@"appleMusicUrl"]) copy];
+        _youtubeUrl = [SZTrackString([dict objectForKey:@"youtubeUrl"]) copy];
+        _spotifyUrl = [SZTrackString([dict objectForKey:@"spotifyUrl"]) copy];
+        _isrc = [SZTrackString([dict objectForKey:@"isrc"]) copy];
+        _pendingSignatureURI = [SZTrackString([dict objectForKey:@"pendingSignatureURI"]) copy];
+        id favorite = [dict objectForKey:@"favorite"];
+        _favorite = [favorite isKindOfClass:[NSNumber class]] && [favorite boolValue];
+        _duration = SZTrackDuration([dict objectForKey:@"duration"]);
+        NSNumber *sampleMs = [dict objectForKey:@"pendingSampleMs"];
+        _pendingSampleMs = [sampleMs isKindOfClass:[NSNumber class]] ? [sampleMs unsignedIntegerValue] : 6000;
 
         NSNumber *ts = [dict objectForKey:@"timestamp"];
-        if (ts) {
+        if ([ts isKindOfClass:[NSNumber class]]) {
             _tagDate = [NSDate dateWithTimeIntervalSince1970:[ts doubleValue]];
         } else {
             _tagDate = [NSDate date];
         }
 
         NSData *imgData = [dict objectForKey:@"coverArtImageData"];
-        if (imgData.length) {
+        if ([imgData isKindOfClass:[NSData class]] && imgData.length) {
             _coverArtImage = [UIImage imageWithData:imgData];
         }
     }
@@ -135,6 +181,9 @@
 - (NSDictionary *)dictionaryRepresentation
 {
     NSMutableDictionary *d = [NSMutableDictionary dictionary];
+    [d setObject:@(_favorite) forKey:@"favorite"];
+    [d setObject:@(_duration) forKey:@"duration"];
+    [d setObject:@(_pendingSampleMs) forKey:@"pendingSampleMs"];
     if (_trackId) [d setObject:(_trackId) forKey:@"trackId"];
     if (_title) [d setObject:(_title) forKey:@"title"];
     if (_artist) [d setObject:(_artist) forKey:@"artist"];
