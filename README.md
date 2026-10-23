@@ -1,6 +1,8 @@
-# Shazamer for iOS 6
+# Shazamer
 
-A standalone retro music recognition app for **jailbroken iOS 6.x** devices (armv7, e.g. iPhone 4S, iPhone 5, iPad 2, iPad mini), with a secondary build for **64-bit devices on iOS 14–17** (iPhone X and newer: rootless jailbreaks and TrollStore) preserving the authentic skeuomorphic iOS 6 aesthetic.
+A standalone retro music recognition app targeting **jailbroken iOS 5–10 devices (ARMv7)**, with an **ARM64 IPA targeting iOS 14+** and a **rootless ARM64 package for iOS 15+**, preserving the authentic skeuomorphic iOS 6 aesthetic. These are the same deployment targets and package requirements as RealNews.
+
+Recognition has been checked on real devices with iOS 6.1.3 and iOS 16.7.16. Other versions in the target ranges have not been exercised on hardware. Installing the ARM64 IPA requires a compatible installer such as TrollStore; the IPA's minimum OS version does not imply that the installer supports every newer OS release.
 
 Tap the iconic glossy blue Shazam button, let the radar listen to ambient audio, and receive track metadata, high-resolution album artwork, and full song lyrics in seconds.
 
@@ -47,15 +49,15 @@ Packages are generated automatically on every release:
 
 | Target Platform | Architecture | Package Format |
 | --- | --- | --- |
-| **iOS 6.x (Classic)** | 32-bit `armv7` | `Shazamer-<version>.ipa` or `com.samcejko.shazamer_<version>_iphoneos-arm.deb` |
-| **iOS 14–17 (Rootless Jailbreak)** | 64-bit `arm64` | `com.samcejko.shazamer_<version>_iphoneos-arm64.deb` |
-| **iOS 14–17 (TrollStore)** | 64-bit `arm64` | `Shazamer-<version>-arm64.ipa` |
+| **iOS 5–10 (Classic)** | 32-bit `armv7` | `Shazamer-<version>.ipa` or `com.samcejko.shazamer_<version>_iphoneos-arm.deb` |
+| **iOS 15+ (Rootless Jailbreak)** | 64-bit `arm64` | `com.samcejko.shazamer_<version>_iphoneos-arm64.deb` |
+| **iOS 14+ (IPA; compatible installer required)** | 64-bit `arm64` | `Shazamer-<version>-arm64.ipa` |
 
 ---
 
 ## Installation
 
-### iOS 6.x (32-bit Jailbreak)
+### iOS 5–10 (32-bit Jailbreak)
 1. Add the Cydia repository: `http://repo.samcejko.eu/`
 2. Search for **Shazamer** and install.
 3. *Alternative manual install*:
@@ -66,20 +68,21 @@ Packages are generated automatically on every release:
      ```
    - Or install the Debian package via terminal:
      ```sh
-     dpkg -i com.samcejko.shazamer_1.0.0_iphoneos-arm.deb && uicache
+     dpkg -i com.samcejko.shazamer_1.0.4_iphoneos-arm.deb && uicache
      ```
 
-### iOS 14–17 (64-bit Rootless or TrollStore)
-- **TrollStore**: Download `Shazamer-arm64.ipa` in Safari, open with TrollStore, and tap **Install**.
-- **Rootless Jailbreak (Dopamine / palera1n)**: Install `com.samcejko.shazamer_1.0.0_iphoneos-arm64.deb` via Sileo / Zebra or `dpkg -i`.
+### ARM64: IPA targeting iOS 14+, rootless package requiring iOS 15+
+- **TrollStore on a compatible OS**: Download `Shazamer-1.0.4-arm64.ipa` in Safari, open with TrollStore, and tap **Install**.
+- **Rootless Jailbreak (iOS 15+)**: Install `com.samcejko.shazamer_1.0.4_iphoneos-arm64.deb` via Sileo / Zebra or `dpkg -i`.
 
 ---
 
 ## Building
 
 The project is compiled using Theos and GitHub Actions (`.github/workflows/build.yml`):
-- `armv7` target: iOS 9.3 SDK, minimum deployment target 6.0.
+- `armv7` target: iOS 9.3 SDK, minimum deployment target 5.0; package requires iOS 5.0 through 10.x.
 - `arm64` target: iOS 16.5 SDK, minimum deployment target 14.0.
+- The rootless ARM64 Debian package requires iOS 15.0 or newer, independently of the binary/IPA minimum.
 
 ### Automated GitHub CI Workflow
 Push changes or trigger builds remotely using the provided PowerShell scripts:
