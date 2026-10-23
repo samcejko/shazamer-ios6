@@ -1,6 +1,6 @@
-# Recognized-song playback handoff (unreleased)
+# Recognized-song playback handoff
 
-Source changes only. No builds, version bumps or deployments were performed. End-to-end playback must be checked after building Shazamer and the three receiving apps.
+Released in Shazamer 1.0.3–1.0.4, Muzika 0.1.2, Sixify 0.2.4 and Tubie 0.4.4. See `DEVICE-CHECKS-2026-10-24.md` for the actual device coverage and remaining checks.
 
 The previous sender used `muzika://isrc/<code>`, a route Muzika never implemented. It also used `spotify:search:`, which belongs to the official Spotify scheme rather than Sixify's registered schemes. `canOpenURL` only confirms ownership of a scheme; it cannot verify that a path is implemented or that playback started.
 
@@ -18,7 +18,9 @@ Muzika uses its existing ISRC/title/artist/duration matcher on a worker, then st
 
 The Foundation-only helpers in `tools/MusicHandoff.h` are copied identically into Shazamer's `src/Util/` and each receiver's `src/`. They validate exact hostnames and recording IDs, exclude unsupported link shapes such as Spotify albums/playlists, and normalize match text. Keep the copies synchronized. Shazamer's Info.plist includes the sibling schemes in `LSApplicationQueriesSchemes` for modern iOS.
 
-## Deferred device checks
+External opening is dispatched after the current incoming URL callback returns. On modern iOS it uses `openURL:options:completionHandler:` dynamically; iOS 5/6 retains the legacy API on the next main-queue turn. Synchronous modern URL opening inside an incoming scene callback was confirmed in an iOS 16 watchdog stack during testing.
+
+## Additional coverage
 
 - Cold launch and already-running launch of all three receivers from a recognized song.
 - Both a known direct provider link and metadata-only recognition, including ISRC and no-ISRC cases.
@@ -29,4 +31,4 @@ The Foundation-only helpers in `tools/MusicHandoff.h` are copied identically int
 - Trigger two handoffs quickly and choose another track while matching; an old lookup must not interrupt the new choice.
 - No-network, no-result and unavailable-track behavior must show the existing error/search UI without starting unrelated audio.
 
-Static review passed: UTF-8 decoding and source delimiters, valid Info.plist with required scheme allowlist, identical helper copies, receiver handlers outside debug mode, and duplicate-free new translations. No device playback test has been performed for these source changes.
+Native helper tests and both architecture builds passed. Actual metadata-only recognition of NEXTIME's “СВЕТЛАНА!” opened and played in Muzika on both devices, Tubie on both devices, and Sixify on the signed-in iPhone. The iPad's Sixify session was logged out, so its playback path could not be checked there. The list above records additional cases rather than claiming exhaustive device coverage.

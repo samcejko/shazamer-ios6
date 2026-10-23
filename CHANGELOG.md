@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## [1.0.4] - 2026-10-24
+
+- Open external apps asynchronously after returning from incoming URL callbacks. Avoid the modern iOS scene-update watchdog termination seen during handoffs.
+
+## [1.0.3] - 2026-10-24
 
 - Replace the unsupported Muzika ISRC route with backward-compatible direct-play/search handoffs; add recognized-song autoplay receivers in Muzika, Sixify and Tubie source trees.
 
@@ -12,7 +16,8 @@
 - Show available album, release date, genre, label, ISRC and duration, with available music-service links.
 - Keep compatibility with existing history entries and save the actual duration of pending offline fingerprints.
 
-Source changes only: no package build or deployment requested for these additions.
+- Correct tiled glossy button backgrounds and center tablet song metadata.
+- Build both architectures and publish device screenshots from iOS 6 and iOS 16.
 
 ## [1.0.2] - 2026-10-24
 
