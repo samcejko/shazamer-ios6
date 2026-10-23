@@ -1,6 +1,5 @@
 #import "SZSignatureGenerator.h"
 #import "SZFFT.h"
-#import "SZCommon.h"
 #include <math.h>
 #include <string.h>
 
@@ -81,7 +80,8 @@ static uint32_t SZCRC32(const uint8_t *data, size_t length)
 
     float hanning[SZ_FFT_SIZE];
     for (int i = 0; i < SZ_FFT_SIZE; i++) {
-        hanning[i] = 0.5f * (1.0f - (float)cos(2.0 * M_PI * (double)i / (double)SZ_FFT_SIZE));
+        // Shazam uses the interior 2048 samples of a 2050-point Hann window.
+        hanning[i] = 0.5f * (1.0f - (float)cos(2.0 * M_PI * (double)(i + 1) / (double)(SZ_FFT_SIZE + 1)));
     }
 
     int16_t ringBuffer[SZ_FFT_SIZE];
@@ -140,7 +140,7 @@ static uint32_t SZCRC32(const uint8_t *data, size_t length)
         /* Peak spreading - frequency domain */
         float *spreadCurr = spreadOutputs[spreadOutputsIndex];
         memcpy(spreadCurr, currFFT, SZ_FFT_BINS * sizeof(float));
-        for (int pos = 0; pos <= 1022; pos++) {
+        for (int pos = 0; pos < SZ_FFT_BINS - 3; pos++) {
             float maxVal = spreadCurr[pos];
             if (spreadCurr[pos + 1] > maxVal) maxVal = spreadCurr[pos + 1];
             if (spreadCurr[pos + 2] > maxVal) maxVal = spreadCurr[pos + 2];
@@ -149,14 +149,17 @@ static uint32_t SZCRC32(const uint8_t *data, size_t length)
 
         /* Peak spreading - time domain */
         static const int formerOffsets[3] = {1, 3, 6};
+        float *spreadMaximum = spreadCurr;
         for (int fo = 0; fo < 3; fo++) {
             uint8_t formerIdx = (spreadOutputsIndex - formerOffsets[fo]) & 0xFF;
             float *former = spreadOutputs[formerIdx];
             for (int pos = 0; pos < SZ_FFT_BINS; pos++) {
-                if (spreadCurr[pos] > former[pos]) {
-                    former[pos] = spreadCurr[pos];
+                if (spreadMaximum[pos] > former[pos]) {
+                    former[pos] = spreadMaximum[pos];
                 }
             }
+            // Each older frame includes the maximum of ALL newer frames in this cascade.
+            spreadMaximum = former;
         }
 
         spreadOutputsIndex = (spreadOutputsIndex + 1) & 0xFF;

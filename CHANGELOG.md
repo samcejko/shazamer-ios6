@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2] - 2026-10-24
+
+- Ship the worker-stack crash fix: fingerprint histories live in heap storage, retained for the whole calculation.
+- Correct the Hann window and cascading time-domain peak spreading used for recognition.
+- Ship rounded installed icons in every supported size.
+- Exercise the actual native fingerprint code on a 512 KiB worker stack with sanitizers, and verify a music fingerprint against Shazam before building packages.
+
 ## [1.0.0] - 2026-10-19
 
 ### Initial Release

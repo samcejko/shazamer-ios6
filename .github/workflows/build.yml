@@ -22,7 +22,25 @@ env:
   THEOS_CACHE_KEY: theos-linux-clang11-sdk93-sdk165-v2
 
 jobs:
+  signature-test:
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and exercise the actual fingerprint implementation
+        run: |
+          clang -fobjc-arc -O2 -g -fsanitize=address,undefined -framework Foundation -Isrc/DSP tools/check_signature.m src/DSP/SZSignatureGenerator.m src/DSP/SZFFT.c -o /tmp/check-signature
+          /tmp/check-signature
+      - name: Generate a fingerprint from the ShazamIO music example
+        run: |
+          command -v ffmpeg || brew install ffmpeg
+          curl --fail --location https://raw.githubusercontent.com/shazamio/ShazamIO/master/examples/data/Gloria.ogg -o /tmp/music.ogg
+          ffmpeg -v error -i /tmp/music.ogg -t 8 -ar 16000 -ac 1 -f s16le /tmp/music.pcm
+          /tmp/check-signature /tmp/music.pcm /tmp/music.sig
+          python3 tools/check_recognition.py /tmp/music.sig
+
   build:
+    needs: signature-test
     strategy:
       fail-fast: false
       matrix:
