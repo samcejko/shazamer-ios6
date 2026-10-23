@@ -162,7 +162,7 @@
     btn.titleLabel.shadowColor = [UIColor colorWithWhite:0.0 alpha:0.6];
     btn.titleLabel.shadowOffset = CGSizeMake(0, -1);
 
-    UIImage *btnBg = [SZTheme glossyButtonWithColor:tint height:40.0 cornerRadius:8.0];
+    UIImage *btnBg = [SZTheme glossyButtonWithColor:tint height:42.0 cornerRadius:8.0];
     [btn setBackgroundImage:btnBg forState:UIControlStateNormal];
     [btn addTarget:self action:sel forControlEvents:UIControlEventTouchUpInside];
     return btn;
@@ -218,8 +218,9 @@
     y += 24.0f;
 
     if (_albumLabel.text.length) {
-        CGFloat detailsHeight = [_albumLabel sizeThatFits:CGSizeMake(textWidth, CGFLOAT_MAX)].height;
-        _albumLabel.frame = CGRectMake(16.0f, y, textWidth, detailsHeight);
+        CGFloat detailsWidth = MIN(textWidth, 320.0f);
+        CGFloat detailsHeight = [_albumLabel sizeThatFits:CGSizeMake(detailsWidth, CGFLOAT_MAX)].height;
+        _albumLabel.frame = CGRectMake((width - detailsWidth) * 0.5f, y, detailsWidth, detailsHeight);
         y += detailsHeight + 12.0f;
     }
 

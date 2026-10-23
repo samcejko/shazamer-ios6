@@ -114,7 +114,10 @@
 
     UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
-    return [img resizableImageWithCapInsets:UIEdgeInsetsMake(radius, radius, radius, radius)];
+    // A one-pixel stretch region keeps the rounded ends intact on iOS 5+.
+    // resizableImageWithCapInsets: tiles by default, repeating the bevel.
+    return [img stretchableImageWithLeftCapWidth:(NSInteger)(w * 0.5f)
+                                  topCapHeight:(NSInteger)(h * 0.5f)];
 }
 
 + (void)applyNavigationTheme:(UINavigationBar *)bar

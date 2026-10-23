@@ -13,8 +13,8 @@
 
 /* Track Actions */
 "PLAY_IN_MUZIKA" = "Play in Muzika";
-"PLAY_IN_SPOT6" = "Play in Spot6";
-"SEARCH_IN_TUBIE" = "Search in Tubie";
+"PLAY_IN_SPOT6" = "Play in Sixify";
+"SEARCH_IN_TUBIE" = "Play in Tubie";
 "OPEN_IN_YOUTUBE" = "Open on YouTube";
 "OPEN_IN_APPLE_MUSIC" = "Open in Apple Music";
 "OPEN_IN_SPOTIFY" = "Open in Spotify";

@@ -12,9 +12,9 @@
 "SETTINGS" = "Nastavení";
 
 /* Track Actions */
-"PLAY_IN_MUZIKA" = "Přehrát v Muzika";
-"PLAY_IN_SPOT6" = "Přehrát ve Spot6";
-"SEARCH_IN_TUBIE" = "Vyhledat v Tubie";
+"PLAY_IN_MUZIKA" = "Přehrát v Muzice";
+"PLAY_IN_SPOT6" = "Přehrát v Sixify";
+"SEARCH_IN_TUBIE" = "Přehrát v Tubie";
 "OPEN_IN_YOUTUBE" = "Otevřít na YouTube";
 "OPEN_IN_APPLE_MUSIC" = "Otevřít v Apple Music";
 "OPEN_IN_SPOTIFY" = "Otevřít na Spotify";
