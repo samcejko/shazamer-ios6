@@ -1,4 +1,5 @@
 #import "SZTheme.h"
+#import "SZModern.h"
 #import <QuartzCore/QuartzCore.h>
 
 @implementation SZTheme
@@ -137,6 +138,7 @@
         UITextAttributeFont: [UIFont boldSystemFontOfSize:20.0]
     };
     bar.titleTextAttributes = titleAttr;
+    SZModernApplyNavigationBarBackground(bar, bg, nil, nil, nil, nil);
 }
 
 @end

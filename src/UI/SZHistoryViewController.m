@@ -137,7 +137,7 @@
 
 - (void)clearTapped
 {
-    UIActionSheet *sheet = [[UIActionSheet alloc] initWithTitle:L(@"CLEAR_HISTORY_CONFIRM")
+    UIActionSheet *sheet = [[RetroActionSheet alloc] initWithTitle:L(@"CLEAR_HISTORY_CONFIRM")
                                                        delegate:self
                                               cancelButtonTitle:L(@"CANCEL")
                                          destructiveButtonTitle:L(@"CLEAR_HISTORY")
@@ -261,7 +261,7 @@
                 SZTrackViewController *vc = [[SZTrackViewController alloc] initWithTrack:recognized];
                 [self.navigationController pushViewController:vc animated:YES];
             } else {
-                UIAlertView *alert = [[UIAlertView alloc] initWithTitle:L(@"APP_NAME")
+                UIAlertView *alert = [[RetroAlertView alloc] initWithTitle:L(@"APP_NAME")
                                                                message:error.localizedDescription ?: L(@"NO_MATCH")
                                                               delegate:nil
                                                      cancelButtonTitle:L(@"DONE")

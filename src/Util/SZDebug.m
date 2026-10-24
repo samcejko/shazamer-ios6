@@ -8,6 +8,7 @@
 
 @interface SZMainViewController (DebugActions)
 - (void)openHistory;
+- (void)openSettings;
 @end
 @interface SZTrackViewController (DebugActions)
 - (void)toggleFavorite;
@@ -55,6 +56,7 @@ BOOL SZHandleDebugURL(NSURL *url, UIWindow *window, UINavigationController *navi
         [[NSJSONSerialization dataWithJSONObject:status options:0 error:NULL] writeToFile:[NSTemporaryDirectory() stringByAppendingPathComponent:@"status.json"] atomically:YES];
         return YES;
     }
+    if ([command isEqualToString:@"settings"] && [top isKindOfClass:[SZMainViewController class]]) { [(SZMainViewController *)top openSettings]; return YES; }
     if ([command isEqualToString:@"history"] && [top isKindOfClass:[SZMainViewController class]]) { [(SZMainViewController *)top openHistory]; return YES; }
     if ([command isEqualToString:@"back"]) {
         if (top.navigationController.viewControllers.count > 1) [top.navigationController popViewControllerAnimated:NO];

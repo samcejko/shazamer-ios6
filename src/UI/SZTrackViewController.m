@@ -321,7 +321,7 @@
             [self presentViewController:avc animated:YES completion:nil];
         }
     } else {
-        UIActionSheet *sheet = [[UIActionSheet alloc] initWithTitle:text
+        UIActionSheet *sheet = [[RetroActionSheet alloc] initWithTitle:text
                                                            delegate:self
                                                   cancelButtonTitle:L(@"CANCEL")
                                              destructiveButtonTitle:nil

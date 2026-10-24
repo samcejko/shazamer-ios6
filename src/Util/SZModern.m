@@ -479,8 +479,7 @@ void SZModernApplyNavigationBarBackground(UINavigationBar *bar, UIImage *image, 
     bar.translucent = NO;
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
     if (ORAtLeast(13)) {
-        UINavigationBarAppearance *a = [[UINavigationBarAppearance alloc] init];
-        [a configureWithOpaqueBackground];
+        UINavigationBarAppearance *a = ORNavigationBarAppearance(ORIsBlack(bar.barStyle), NO);
         a.backgroundImage = image;
         a.backgroundImageContentMode = UIViewContentModeScaleToFill;
         a.shadowColor = nil;
@@ -508,6 +507,24 @@ void SZModernApplyNavigationBarBackground(UINavigationBar *bar, UIImage *image, 
     [bar setShadowImage:ORClearImage(CGSizeMake(1, 1))];
     if (titleAttributes) [bar setTitleTextAttributes:titleAttributes];
     // (the legacy button images come from the app's own UIBarButtonItem appearance; nothing more to do here)
+}
+
+void SZModernApplyToolbarBackground(UIToolbar *bar, UIImage *image)
+{
+    if (!bar || !image || !SZModernIOS()) return;
+    bar.translucent = NO;
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000
+    if (ORAtLeast(13)) {
+        UIToolbarAppearance *a = ORToolbarAppearance(ORIsBlack(bar.barStyle), NO);
+        a.backgroundImage = image;
+        [bar setStandardAppearance:a]; [bar setCompactAppearance:a];
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000
+        if (ORAtLeast(15)) { [bar setScrollEdgeAppearance:a]; [bar setCompactScrollEdgeAppearance:a]; }
+#endif
+        return;
+    }
+#endif
+    [bar setBackgroundImage:image forToolbarPosition:UIBarPositionAny barMetrics:UIBarMetricsDefault];
 }
 
 UITextField *SZModernSearchBarTextField(UISearchBar *bar)

@@ -22,6 +22,7 @@ void SZModernSetUpWithoutSkin(void);
 // and the bar buttons' images and title attributes may be nil. No-ops on iOS 6.
 void SZModernApplyNavigationBarBackground(UINavigationBar *bar, UIImage *image, NSDictionary *titleAttributes,
                                              UIImage *buttonImage, UIImage *buttonImageHighlighted, NSDictionary *buttonTitleAttributes);
+void SZModernApplyToolbarBackground(UIToolbar *bar, UIImage *image);
 void SZModernApplyTabBarBackground(UITabBar *bar, UIImage *image);
 
 // The text field inside a search bar (iOS 13 names it; before that it is found among the subviews), or nil.

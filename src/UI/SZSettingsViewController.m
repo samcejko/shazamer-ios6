@@ -15,7 +15,7 @@
 {
     [super viewDidLoad];
     self.title = L(@"SETTINGS");
-    self.view.backgroundColor = [UIColor colorWithRed:226.0/255.0 green:231.0/255.0 blue:237.0/255.0 alpha:1.0];
+    self.view.backgroundColor = RetroGroupedBackground();
 
     UIBarButtonItem *doneItem = [[UIBarButtonItem alloc] initWithTitle:L(@"DONE")
                                                                  style:UIBarButtonItemStyleDone
@@ -53,6 +53,15 @@
     return 0;
 }
 
+- (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section
+{
+    return RetroSectionHeader([self tableView:tableView titleForHeaderInSection:section], tableView.bounds.size.width);
+}
+- (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section
+{
+    return [self tableView:tableView titleForHeaderInSection:section].length ? 32.0 : 10.0;
+}
+
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section
 {
     if (section == 0) return L(@"GENERAL");
@@ -67,7 +76,7 @@
         if (indexPath.row == 0) {
             UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
             cell.textLabel.text = L(@"SETTINGS_AUTO_LISTEN");
-            UISwitch *sw = [[UISwitch alloc] init];
+            UISwitch *sw = RetroMakeSwitch();
             sw.on = [SZSettings sharedSettings].autoListenOnLaunch;
             [sw addTarget:self action:@selector(autoListenChanged:) forControlEvents:UIControlEventValueChanged];
             cell.accessoryView = sw;
@@ -76,7 +85,7 @@
         } else if (indexPath.row == 1) {
             UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil];
             cell.textLabel.text = L(@"SETTINGS_VIBRATE");
-            UISwitch *sw = [[UISwitch alloc] init];
+            UISwitch *sw = RetroMakeSwitch();
             sw.on = [SZSettings sharedSettings].vibrateOnMatch;
             [sw addTarget:self action:@selector(vibrateChanged:) forControlEvents:UIControlEventValueChanged];
             cell.accessoryView = sw;
@@ -106,7 +115,7 @@
         if (indexPath.row == 0) {
             UITableViewCell *cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleValue1 reuseIdentifier:nil];
             cell.textLabel.text = L(@"VERSION");
-            cell.detailTextLabel.text = @"1.0.0 (iOS 6 + 14)";
+            cell.detailTextLabel.text = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
             cell.selectionStyle = UITableViewCellSelectionStyleNone;
             return cell;
         } else {
