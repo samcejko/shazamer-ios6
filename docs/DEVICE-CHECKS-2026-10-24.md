@@ -28,3 +28,9 @@ Four screenshots from each real device show Home, song detail, Favorites and his
 - All device orientations and other hardware/iOS versions.
 
 Native helper tests cover quiet PCM, DC offset, an isolated click, a sustained tone, validated provider IDs, false hosts, Cyrillic matching and unwanted recording versions. Those checks do not substitute for the unexercised UI cases above.
+
+## Classic UI completion (1.0.5)
+
+Both architecture builds and fingerprint sanitizer checks passed in run 40080891933, commit be84a97edc64adf29bfd0f115deb04a5e3c70ccd. Checked main, detail, favorites, search and Settings on iOS 6.1.3 and iOS 16.7.16. Modern iOS uses classic capsule switches, glossy navigation buttons, pinstriped grouped settings, embossed headings, app dialogs/menus and full-screen iPhone app windows. Native iOS 5/6 controls remain in use on old devices. System share sheets, keyboards and pickers retain the installed OS appearance. The displayed Settings version is read from the installed bundle.
+
+Screenshots were refreshed; temporary favorites used for screenshots were restored to their original values. The smallest 29 px icon has negligible 2/255 corner alpha from antialiasing; other sizes, including the public icon, have zero-alpha corners.
